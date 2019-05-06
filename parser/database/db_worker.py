@@ -2,6 +2,10 @@ import sqlite3
 from sqlite3 import Error
 from pathlib import Path
 import re
+import logging
+
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='../logs/parser_log.log',
+                    level=logging.DEBUG)
 
 
 # Function for delete \t\n
@@ -29,7 +33,7 @@ def create_connection():
         print(sqlite3.version)
         return conn
     except Error as e:
-        print(e)
+        logging.warning(e)
     return None
 
 
@@ -43,4 +47,4 @@ def create_table(conn, create_table_sql):
         c = conn.cursor()
         c.execute(create_table_sql)
     except Error as e:
-        print(e)
+        logging.warning(e)

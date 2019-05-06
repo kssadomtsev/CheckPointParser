@@ -2,6 +2,11 @@ from sqlite3 import Error
 from database import db_worker
 import xml.etree.ElementTree as ET
 
+import logging
+
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='../logs/parser_log.log',
+                    level=logging.DEBUG)
+
 
 def create_service(conn, service):
     """
@@ -18,7 +23,7 @@ def create_service(conn, service):
     try:
         cur.execute(sql, service)
     except Error as e:
-        print(e)
+        logging.warning(str(e) + " for entry " + service[0])
     return cur.lastrowid
 
 
@@ -37,7 +42,7 @@ def create_service_group(conn, service_group):
     try:
         cur.execute(sql, service_group)
     except Error as e:
-        print(e)
+        logging.warning(str(e) + " for entry " + service_group[0])
     return cur.lastrowid
 
 
@@ -139,3 +144,4 @@ def create_list_service(filepath):
         parse_list_service(filepath + "\\services_new.xml", conn)
     else:
         print("Error! cannot create the database connection.")
+        logging.warning("Error! cannot create the database connection.")
