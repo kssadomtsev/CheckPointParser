@@ -1,4 +1,3 @@
-from sqlite3 import Error
 from database import db_worker
 import xml.etree.ElementTree as ET
 import re
@@ -15,25 +14,6 @@ def is_ip_addr(ip_addr_str):
         match = re.search(r"^.*?\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}.*", ip_addr_str)
         return match
     return None
-
-
-def create_net_obj(conn, net_obj, table_name, sql_request):
-    """
-    Create a new net_obj
-    :param conn:
-    :param net_obj:
-    :param table_name:
-    :return:
-    """
-
-    sql = ''' INSERT INTO ''' + table_name + sql_request
-    cur = conn.cursor()
-    #   print(service)
-    try:
-        cur.execute(sql, net_obj)
-    except Error as e:
-        logging.warning(str(e) + " for entry " + net_obj[0])
-    return cur.lastrowid
 
 
 def parser_type1(class_name, table_name, root, conn):
@@ -65,7 +45,7 @@ def parser_type1(class_name, table_name, root, conn):
                 interfaces.append(ipaddr)
             interfaces_str = " , ".join(interfaces)
             net_obj = (name, comment, interfaces_str)
-            create_net_obj(conn, net_obj, table_name, sql_request)
+            db_worker.create_net_obj(conn, net_obj, table_name, sql_request)
             #            print(net_obj)
             logging.info(net_obj)
             count += 1
@@ -92,7 +72,7 @@ def parser_type2(class_name, table_name, root, conn):
             logging.info("Now under analyze... " + name)
             ipaddr = db_worker.del_nt(net_obj_.find('ipaddr').text)
             net_obj = (name, comment, ipaddr)
-            create_net_obj(conn, net_obj, table_name, sql_request)
+            db_worker.create_net_obj(conn, net_obj, table_name, sql_request)
             #            print(net_obj)
             logging.info(net_obj)
             count += 1
@@ -120,7 +100,7 @@ def parser_type3(class_name, table_name, root, conn):
             ipaddr_first = db_worker.del_nt(net_obj_.find('ipaddr_first').text)
             ipaddr_last = db_worker.del_nt(net_obj_.find('ipaddr_last').text)
             net_obj = (name, comment, ipaddr_first, ipaddr_last)
-            create_net_obj(conn, net_obj, table_name, sql_request)
+            db_worker.create_net_obj(conn, net_obj, table_name, sql_request)
             #            print(net_obj)
             logging.info(net_obj)
             count += 1
@@ -148,7 +128,7 @@ def parser_type4(class_name, table_name, root, conn):
             ip_addr = db_worker.del_nt(net_obj_.find('ipaddr').text)
             netmask = db_worker.del_nt(net_obj_.find('netmask').text)
             net_obj = (name, comment, ip_addr + '/' + netmask)
-            create_net_obj(conn, net_obj, table_name, sql_request)
+            db_worker.create_net_obj(conn, net_obj, table_name, sql_request)
             #            print(net_obj)
             logging.info(net_obj)
             count += 1
@@ -180,7 +160,7 @@ def parser_type5(class_name, table_name, root, conn):
                     nodes.append(db_worker.del_nt(cluster_member_.find('Name').text))
             nodes_str = " , ".join(nodes)
             net_obj = (name, comment, nodes_str)
-            create_net_obj(conn, net_obj, table_name, sql_request)
+            db_worker.create_net_obj(conn, net_obj, table_name, sql_request)
             #            print(net_obj)
             logging.info(net_obj)
             count += 1
@@ -210,10 +190,42 @@ def parser_type6(class_name, table_name, root, conn):
                 elements = group_member.findall('reference')
                 for element in elements:
                     members.append(db_worker.del_nt(element.find('Name').text))
-            print(members)
             members_str = " , ".join(members)
             net_obj = (name, comment, members_str)
-            create_net_obj(conn, net_obj, table_name, sql_request)
+            db_worker.create_net_obj(conn, net_obj, table_name, sql_request)
+            logging.info(net_obj)
+            count += 1
+    conn.commit()
+    return count
+
+
+def parser_type7(class_name, table_name, root, conn):
+    """
+    Parser for network objects types: group_with_exception
+    :param class_name:
+    :param table_name:
+    :param root:
+    :param conn:
+    :return count:
+    """
+    count = 0
+    sql_request = ''' (name,comments,members,exceptions)
+              VALUES(?,?,?,?) '''
+    for net_obj_ in root.findall('network_object'):
+        if net_obj_.find('Class_Name').text == class_name:
+            name = db_worker.del_nt(net_obj_.find('Name').text)
+            comment = db_worker.del_nt(net_obj_.find('comments').text)
+            logging.info("Now under analyze... " + name)
+            members = []
+            exceptions = []
+            for obj in net_obj_.findall('base'):
+                members.append(db_worker.del_nt(obj.find('Name').text))
+            for obj in net_obj_.findall('exception'):
+                exceptions.append(db_worker.del_nt(obj.find('Name').text))
+            members_str = " , ".join(members)
+            exceptions_str = " , ".join(exceptions)
+            net_obj = (name, comment, members_str, exceptions_str)
+            db_worker.create_net_obj(conn, net_obj, table_name, sql_request)
             logging.info(net_obj)
             count += 1
     conn.commit()
@@ -226,7 +238,7 @@ def parse_list_network_object(filename, conn):
     tree = ET.parse(filename, ET.XMLParser(encoding="cp1251"))
     root = tree.getroot()
     print(root)
-    count_group_with_exception = 0
+
     # Determine how many network object types we have
     for net_obj_ in root.findall('network_object'):
         if net_obj_.find('Class_Name').text not in type_net_obj:
@@ -256,6 +268,7 @@ def parse_list_network_object(filename, conn):
     logging.info("Count of network_object_group is... " + str(j))
 
     count_network_group = parser_type6('network_object_group', 'network_object_group', root, conn)
+    count_group_with_exception = parser_type7('group_with_exception', 'group_with_exception', root, conn)
 
     print('**********************************************************************')
     print('Numbers of cluster_member = ' + str(count_cluster_member))
@@ -269,6 +282,7 @@ def parse_list_network_object(filename, conn):
     print('Numbers of network = ' + str(count_network))
     print('Numbers of gateway_cluster = ' + str(count_gateway_cluster))
     print('Numbers of network_group = ' + str(count_network_group))
+    print('Numbers of group_with_exception = ' + str(count_group_with_exception))
 
     logging.info('**********************************************************************')
     logging.info('Numbers of cluster_member = ' + str(count_cluster_member))
@@ -282,6 +296,7 @@ def parse_list_network_object(filename, conn):
     logging.info('Numbers of network = ' + str(count_network))
     logging.info('Numbers of gateway_cluster = ' + str(count_gateway_cluster))
     logging.info('Numbers of network_group = ' + str(count_network_group))
+    logging.info('Numbers of group_with_exception = ' + str(count_group_with_exception))
 
     f.close()
 

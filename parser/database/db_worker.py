@@ -48,3 +48,21 @@ def create_table(conn, create_table_sql):
         c.execute(create_table_sql)
     except Error as e:
         logging.warning(e)
+
+
+def create_net_obj(conn, net_obj, table_name, sql_request):
+    """
+    Create a new net_obj
+    :param conn:
+    :param net_obj:
+    :param table_name:
+    :return:
+    """
+
+    sql = ''' INSERT INTO ''' + table_name + sql_request
+    cur = conn.cursor()
+    try:
+        cur.execute(sql, net_obj)
+    except Error as e:
+        logging.warning(str(e) + " for entry " + net_obj[0])
+    return cur.lastrowid
