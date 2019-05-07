@@ -17,8 +17,37 @@ def is_ip_addr(ip_addr_str):
     return None
 
 
+def create_net_obj(conn, net_obj, table_name, sql_request):
+    """
+    Create a new net_obj
+    :param conn:
+    :param net_obj:
+    :param table_name:
+    :return:
+    """
+
+    sql = ''' INSERT INTO ''' + table_name + sql_request
+    cur = conn.cursor()
+    #   print(service)
+    try:
+        cur.execute(sql, net_obj)
+    except Error as e:
+        logging.warning(str(e) + " for entry " + net_obj[0])
+    return cur.lastrowid
+
+
 def parser_type1(class_name, table_name, root, conn):
+    """
+    Parser for network objects types: cluster_member, gateway_ckp, connectra, gateway_plain, sofaware_gateway
+    :param class_name:
+    :param table_name:
+    :param root:
+    :param conn:
+    :return count:
+    """
     count = 0
+    sql_request = ''' (name,comments,interfaces)
+              VALUES(?,?,?) '''
     for net_obj_ in root.findall('network_object'):
         if net_obj_.find('Class_Name').text == class_name:
             name = db_worker.del_nt(net_obj_.find('Name').text)
@@ -36,9 +65,158 @@ def parser_type1(class_name, table_name, root, conn):
                 interfaces.append(ipaddr)
             interfaces_str = " , ".join(interfaces)
             net_obj = (name, comment, interfaces_str)
-            count += 1
-            print(net_obj)
+            create_net_obj(conn, net_obj, table_name, sql_request)
+            #            print(net_obj)
             logging.info(net_obj)
+            count += 1
+    conn.commit()
+    return count
+
+
+def parser_type2(class_name, table_name, root, conn):
+    """
+    Parser for network objects types: host_plain, host_ckp
+    :param class_name:
+    :param table_name:
+    :param root:
+    :param conn:
+    :return count:
+    """
+    count = 0
+    sql_request = ''' (name,comments,ip_address)
+              VALUES(?,?,?) '''
+    for net_obj_ in root.findall('network_object'):
+        if net_obj_.find('Class_Name').text == class_name:
+            name = db_worker.del_nt(net_obj_.find('Name').text)
+            comment = db_worker.del_nt(net_obj_.find('comments').text)
+            logging.info("Now under analyze... " + name)
+            ipaddr = db_worker.del_nt(net_obj_.find('ipaddr').text)
+            net_obj = (name, comment, ipaddr)
+            create_net_obj(conn, net_obj, table_name, sql_request)
+            #            print(net_obj)
+            logging.info(net_obj)
+            count += 1
+    conn.commit()
+    return count
+
+
+def parser_type3(class_name, table_name, root, conn):
+    """
+    Parser for network objects types: address_range
+    :param class_name:
+    :param table_name:
+    :param root:
+    :param conn:
+    :return count:
+    """
+    count = 0
+    sql_request = ''' (name,comments,ipaddr_first,ipaddr_last)
+              VALUES(?,?,?,?) '''
+    for net_obj_ in root.findall('network_object'):
+        if net_obj_.find('Class_Name').text == class_name:
+            name = db_worker.del_nt(net_obj_.find('Name').text)
+            comment = db_worker.del_nt(net_obj_.find('comments').text)
+            logging.info("Now under analyze... " + name)
+            ipaddr_first = db_worker.del_nt(net_obj_.find('ipaddr_first').text)
+            ipaddr_last = db_worker.del_nt(net_obj_.find('ipaddr_last').text)
+            net_obj = (name, comment, ipaddr_first, ipaddr_last)
+            create_net_obj(conn, net_obj, table_name, sql_request)
+            #            print(net_obj)
+            logging.info(net_obj)
+            count += 1
+    conn.commit()
+    return count
+
+
+def parser_type4(class_name, table_name, root, conn):
+    """
+    Parser for network objects types: network
+    :param class_name:
+    :param table_name:
+    :param root:
+    :param conn:
+    :return count:
+    """
+    count = 0
+    sql_request = ''' (name,comments,ip_address)
+              VALUES(?,?,?) '''
+    for net_obj_ in root.findall('network_object'):
+        if net_obj_.find('Class_Name').text == class_name:
+            name = db_worker.del_nt(net_obj_.find('Name').text)
+            comment = db_worker.del_nt(net_obj_.find('comments').text)
+            logging.info("Now under analyze... " + name)
+            ip_addr = db_worker.del_nt(net_obj_.find('ipaddr').text)
+            netmask = db_worker.del_nt(net_obj_.find('netmask').text)
+            net_obj = (name, comment, ip_addr + '/' + netmask)
+            create_net_obj(conn, net_obj, table_name, sql_request)
+            #            print(net_obj)
+            logging.info(net_obj)
+            count += 1
+    conn.commit()
+    return count
+
+
+def parser_type5(class_name, table_name, root, conn):
+    """
+    Parser for network objects types: gateway_cluster
+    :param class_name:
+    :param table_name:
+    :param root:
+    :param conn:
+    :return count:
+    """
+    count = 0
+    sql_request = ''' (name,comments,nodes)
+              VALUES(?,?,?) '''
+    for net_obj_ in root.findall('network_object'):
+        if net_obj_.find('Class_Name').text == class_name:
+            name = db_worker.del_nt(net_obj_.find('Name').text)
+            comment = db_worker.del_nt(net_obj_.find('comments').text)
+            logging.info("Now under analyze... " + name)
+            nodes = []
+            for cluster_members in net_obj_.findall('cluster_members'):
+                cluster_members_ = cluster_members.findall('cluster_members')
+                for cluster_member_ in cluster_members_:
+                    nodes.append(db_worker.del_nt(cluster_member_.find('Name').text))
+            nodes_str = " , ".join(nodes)
+            net_obj = (name, comment, nodes_str)
+            create_net_obj(conn, net_obj, table_name, sql_request)
+            #            print(net_obj)
+            logging.info(net_obj)
+            count += 1
+    conn.commit()
+    return count
+
+
+def parser_type6(class_name, table_name, root, conn):
+    """
+    Parser for network objects types: network_object_group
+    :param class_name:
+    :param table_name:
+    :param root:
+    :param conn:
+    :return count:
+    """
+    count = 0
+    sql_request = ''' (name,comments,members)
+              VALUES(?,?,?) '''
+    for net_obj_ in root.findall('network_object'):
+        if net_obj_.find('Class_Name').text == class_name:
+            name = db_worker.del_nt(net_obj_.find('Name').text)
+            comment = db_worker.del_nt(net_obj_.find('comments').text)
+            logging.info("Now under analyze... " + name)
+            members = []
+            for group_member in net_obj_.findall('members'):
+                elements = group_member.findall('reference')
+                for element in elements:
+                    members.append(db_worker.del_nt(element.find('Name').text))
+            print(members)
+            members_str = " , ".join(members)
+            net_obj = (name, comment, members_str)
+            create_net_obj(conn, net_obj, table_name, sql_request)
+            logging.info(net_obj)
+            count += 1
+    conn.commit()
     return count
 
 
@@ -48,13 +226,6 @@ def parse_list_network_object(filename, conn):
     tree = ET.parse(filename, ET.XMLParser(encoding="cp1251"))
     root = tree.getroot()
     print(root)
-    count_host_plain = 0
-    count_host_ckp = 0
-    count_address_range = 0
-    count_network = 0
-    count_sofaware_gateway = 0
-    count_gateway_cluster = 0
-    count_network_group = 0
     count_group_with_exception = 0
     # Determine how many network object types we have
     for net_obj_ in root.findall('network_object'):
@@ -70,6 +241,48 @@ def parse_list_network_object(filename, conn):
     count_gateway_ckp = parser_type1('gateway_ckp', 'gateway_ckp', root, conn)
     count_connectra = parser_type1('connectra', 'connectra', root, conn)
     count_gateway_plain = parser_type1('gateway_plain', 'gateway_plain', root, conn)
+    count_sofaware_gateway = parser_type1('sofaware_gateway', 'sofaware_gateway', root, conn)
+    count_host_plain = parser_type2('host_plain', 'host_plain', root, conn)
+    count_host_ckp = parser_type2('host_ckp', 'host_ckp', root, conn)
+    count_address_range = parser_type3('address_range', 'address_range', root, conn)
+    count_network = parser_type4('network', 'network', root, conn)
+    count_gateway_cluster = parser_type5('gateway_cluster', 'gateway_cluster', root, conn)
+    j = 0
+    # At first let's count how many network_object_group we have
+    for net_obj_ in root.findall('network_object'):
+        if net_obj_.find('Class_Name').text == 'network_object_group':
+            j += 1
+    print("Count of network_object_group is... " + str(j))
+    logging.info("Count of network_object_group is... " + str(j))
+
+    count_network_group = parser_type6('network_object_group', 'network_object_group', root, conn)
+
+    print('**********************************************************************')
+    print('Numbers of cluster_member = ' + str(count_cluster_member))
+    print('Numbers of gateway_ckp = ' + str(count_gateway_ckp))
+    print('Numbers of connectra = ' + str(count_connectra))
+    print('Numbers of gateway_plain = ' + str(count_gateway_plain))
+    print('Numbers of sofaware_gateway = ' + str(count_sofaware_gateway))
+    print('Numbers of host_plain = ' + str(count_host_plain))
+    print('Numbers of host_ckp = ' + str(count_host_ckp))
+    print('Numbers of address_range = ' + str(count_address_range))
+    print('Numbers of network = ' + str(count_network))
+    print('Numbers of gateway_cluster = ' + str(count_gateway_cluster))
+    print('Numbers of network_group = ' + str(count_network_group))
+
+    logging.info('**********************************************************************')
+    logging.info('Numbers of cluster_member = ' + str(count_cluster_member))
+    logging.info('Numbers of gateway_ckp = ' + str(count_gateway_ckp))
+    logging.info('Numbers of connectra = ' + str(count_connectra))
+    logging.info('Numbers of gateway_plain = ' + str(count_gateway_plain))
+    logging.info('Numbers of sofaware_gateway = ' + str(count_sofaware_gateway))
+    logging.info('Numbers of host_plain = ' + str(count_host_plain))
+    logging.info('Numbers of host_ckp = ' + str(count_host_ckp))
+    logging.info('Numbers of address_range = ' + str(count_address_range))
+    logging.info('Numbers of network = ' + str(count_network))
+    logging.info('Numbers of gateway_cluster = ' + str(count_gateway_cluster))
+    logging.info('Numbers of network_group = ' + str(count_network_group))
+
     f.close()
 
 
@@ -107,7 +320,8 @@ def create_list_network_object(filepath):
     sql_create_address_range_table = """ CREATE TABLE IF NOT EXISTS address_range (
                                          name text PRIMARY KEY,
                                          comments text,
-                                         ip_addresses text
+                                         ipaddr_first text,
+                                         ipaddr_last text
                                      ); """
     sql_create_host_plain_table = """ CREATE TABLE IF NOT EXISTS host_plain (
                                          name text PRIMARY KEY,

@@ -9,6 +9,7 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S
 
 
 def run_parser():
+    logging.info("Programm was started")
     print()
     print("1. Format XML file ")
     print("2. Create services database from XML file ")
@@ -25,13 +26,14 @@ def run_parser():
             logging.info("Option 2 was selected")
             service_worker.create_list_service(input("Enter full path to formated XML files: "))
         elif option == "3":
-            logging.info("Option 2 was selected")
+            logging.info("Option 3 was selected")
             network_worker.create_list_network_object(input("Enter full path to formated XML files: "))
         elif option == "exit":
+            logging.info("Exit")
             sys.exit(1)
         else:
             logging.info("Invalid option was selected")
-            print("Invlid option")
+            print("Invalid option was selected")
 
 
 def main():
