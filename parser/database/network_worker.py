@@ -33,7 +33,7 @@ def parser_type1(net_obj_):
     ipaddr = db_worker.del_nt(net_obj_.find('ipaddr').text)
     if ipaddr not in interfaces and ipaddr is not None:
         interfaces.append(ipaddr)
-    interfaces_str = " , ".join(interfaces)
+    interfaces_str = ",".join(interfaces)
     return (interfaces_str,)
 
 
@@ -84,7 +84,7 @@ def parser_type5(net_obj_):
         cluster_members_ = cluster_members.findall('cluster_members')
         for cluster_member_ in cluster_members_:
             nodes.append(db_worker.del_nt(cluster_member_.find('Name').text))
-    nodes_str = " , ".join(nodes)
+    nodes_str = ",".join(nodes)
     return (nodes_str,)
 
 
@@ -100,7 +100,7 @@ def parser_type6(net_obj_):
         elements = group_member.findall('reference')
         for element in elements:
             members.append(db_worker.del_nt(element.find('Name').text))
-    members_str = " , ".join(members)
+    members_str = ",".join(members)
     return (members_str,)
 
 
@@ -117,8 +117,8 @@ def parser_type7(net_obj_):
         members.append(db_worker.del_nt(obj.find('Name').text))
     for obj in net_obj_.findall('exception'):
         exceptions.append(db_worker.del_nt(obj.find('Name').text))
-    members_str = " , ".join(members)
-    exceptions_str = " , ".join(exceptions)
+    members_str = ",".join(members)
+    exceptions_str = ",".join(exceptions)
     return (members_str, exceptions_str)
 
 

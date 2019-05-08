@@ -26,6 +26,7 @@ def parse_list_service(filename, conn):
             color = db_worker.del_nt(service_.find('color').text)
             logging.info("Now under analyze... " + name)
             service = (name, comment, color, type, port)
+            logging.info(service)
             db_worker.create_net_obj(conn, service, "services", sql_service)
             count_services += 1
         # Add to all objects database all other services
@@ -38,6 +39,7 @@ def parse_list_service(filename, conn):
                 logging.info("Now under analyze... " + name)
                 port = None
                 service = (name, comment, color, type, port)
+                logging.info(service)
                 db_worker.create_net_obj(conn, service, "services", sql_service)
 
                 count_services += 1
@@ -54,11 +56,15 @@ def parse_list_service(filename, conn):
                 elements = service_gr_mem.findall('reference')
                 for element in elements:
                     members.append(db_worker.del_nt(element.find('Name').text))
-            members_str = " , ".join(members)
+            members_str = ",".join(members)
             service_group = (name, comment, color, members_str)
+            logging.info(service_group)
             db_worker.create_net_obj(conn, service_group, "service_groups", sql_service_group)
             count_services += 1
     conn.commit()
+    cur = conn.cursor()
+    cur.execute("CREATE UNIQUE INDEX idx_services_name ON services (name)")
+    cur.execute("CREATE UNIQUE INDEX idx_service_groups_name ON service_groups (name)")
     print('Numbers of services and groups = ' + str(count_services))
     f.close()
 
