@@ -9,10 +9,10 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S
 
 def parse_list_service(filename, conn):
     f = open(filename, 'rU')
-    sql_service = ''' (name,comments,type,port)
+    sql_service = ''' (name,comments,color,type,port)
+              VALUES(?,?,?,?,?) '''
+    sql_service_group = ''' (name,comments,color,members)
               VALUES(?,?,?,?) '''
-    sql_service_group = ''' (name,comments,members)
-              VALUES(?,?,?) '''
     tree_services = ET.parse(filename)
     root_services = tree_services.getroot()
     count_services = 0
@@ -23,8 +23,9 @@ def parse_list_service(filename, conn):
             comment = db_worker.del_nt(service_.find('comments').text)
             type = db_worker.del_nt(service_.find('type').text)
             port = db_worker.del_nt(service_.find('port').text)
+            color = db_worker.del_nt(service_.find('color').text)
             logging.info("Now under analyze... " + name)
-            service = (name, comment, type, port)
+            service = (name, comment, color, type, port)
             db_worker.create_net_obj(conn, service, "services", sql_service)
             count_services += 1
         # Add to all objects database all other services
@@ -33,9 +34,10 @@ def parse_list_service(filename, conn):
                 name = db_worker.del_nt(service_.find('Name').text)
                 type = "other_service"
                 comment = db_worker.del_nt(service_.find('comments').text)
+                color = db_worker.del_nt(service_.find('color').text)
                 logging.info("Now under analyze... " + name)
                 port = None
-                service = (name, comment, type, port)
+                service = (name, comment, color, type, port)
                 db_worker.create_net_obj(conn, service, "services", sql_service)
 
                 count_services += 1
@@ -45,6 +47,7 @@ def parse_list_service(filename, conn):
         if service_.find('Class_Name').text == 'service_group':
             name = db_worker.del_nt(service_.find('Name').text)
             comment = db_worker.del_nt(service_.find('comments').text)
+            color = db_worker.del_nt(service_.find('color').text)
             logging.info("Now under analyze... " + name)
             members = []
             for service_gr_mem in service_.findall('members'):
@@ -52,7 +55,7 @@ def parse_list_service(filename, conn):
                 for element in elements:
                     members.append(db_worker.del_nt(element.find('Name').text))
             members_str = " , ".join(members)
-            service_group = (name, comment, members_str)
+            service_group = (name, comment, color, members_str)
             db_worker.create_net_obj(conn, service_group, "service_groups", sql_service_group)
             count_services += 1
     conn.commit()
@@ -64,12 +67,14 @@ def create_list_service(filepath):
     sql_create_services_table = """ CREATE TABLE IF NOT EXISTS services (
                                          name text PRIMARY KEY,
                                          comments text,
+                                         color text,
                                          type text,
-                                         port text
+                                         port text                                    
                                      ); """
     sql_create_service_groups_table = """ CREATE TABLE IF NOT EXISTS service_groups (
                                          name text PRIMARY KEY,
                                          comments text,
+                                         color text,
                                          members text
                                      ); """
     conn = db_worker.create_connection()
