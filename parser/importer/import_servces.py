@@ -1,13 +1,76 @@
-import sys
-
 from database import db_worker
+from model import network_objects
+from importer import api_worker
 import logging
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='../logs/parser_log.log',
                     level=logging.DEBUG)
+list_services = []
 
 
-def create_servces():
+def get_members(group, cur):
+    cur.execute("SELECT members FROM service_groups WHERE name='%s'" % (group,))
+    rows = cur.fetchone()
+    row_str = str(rows).strip("()',")
+    return row_str.split(",")
+
+
+def create_service_group(group, cur):
+    for row in get_members(group, cur):
+        logging.info(row)
+        cur.execute("SELECT type FROM service_index WHERE name =(?)", (row,))
+        rows_ = cur.fetchone()
+        #       logging.info(rows_)
+        row_str = str(rows_).strip("()',")
+        logging.info(row_str)
+        if row_str == "services" and row not in list_services:
+            list_services.append(row)
+            logging.info("Creating service " + row)
+            create_service(row, cur)
+        elif row_str == "service_groups" and row not in list_services:
+            create_service_group(row, cur)
+    list_services.append(group)
+    logging.info("Creating service group " + group)
+    cur.execute("SELECT * FROM service_groups WHERE name='%s'" % (group,))
+    rows = cur.fetchone()
+    print(rows)
+    service_group_obj = network_objects.service_group(rows[0], rows[1], rows[2].lower(), rows[3])
+    logging.info("Trying to add to SMS service group " + service_group_obj.name)
+    print("Trying to add to SMS service group " + service_group_obj.name)
+    api_worker.create_object("add-service-group",
+                             {"name": service_group_obj.name, "comments": service_group_obj.comments,
+                              "color": api_worker.choose_color(service_group_obj),
+                              "members": service_group_obj.members.split(","),
+                              "ignore-warnings": "true"})
+
+
+def create_service(service, cur):
+    cur.execute("SELECT * FROM services WHERE name='%s'" % (service,))
+    rows = cur.fetchone()
+    service_obj = network_objects.service(rows[0], rows[1], rows[2], rows[3].lower(), rows[4])
+    if service_obj.type == "tcp":
+        print("TCP servcie!!")
+        service_obj.print_service()
+        logging.info("Trying to add to SMS service " + service_obj.name)
+        api_worker.create_object("add-service-tcp", {"name": service_obj.name, "comments": service_obj.comments,
+                                                     "port": service_obj.port,
+                                                     "color": api_worker.choose_color(service_obj),
+                                                     "ignore-warnings": "true"})
+    elif service_obj.type == "udp":
+        print("UDP servcie!!")
+        service_obj.print_service()
+        logging.info("Trying to add to SMS service " + service_obj.name)
+        api_worker.create_object("add-service-udp", {"name": service_obj.name, "comments": service_obj.comments,
+                                                     "port": service_obj.port,
+                                                     "color": api_worker.choose_color(service_obj),
+                                                     "ignore-warnings": "true"})
+    else:
+        print("Other!!!!!!!!!!!!!!")
+        logging.info("Other service " + service_obj.name)
+        service_obj.print_service()
+
+
+def create_services():
     conn = db_worker.create_connection()
     if conn is not None:
         cur = conn.cursor()
@@ -16,18 +79,26 @@ def create_servces():
         s = set()
         list = []
         for row in rows:
-            print(type(row))
             row_str = str(row).strip("()',")
-            print(row_str)
             list.extend(row_str.split(","))
-        print(len(list))
+        logging.info("Total number of services in rules " + str(len(list)))
         s.update(list)
-        print(len(s))
+        logging.info("Total number of unique services in rules " + str(len(s)))
+        logging.info("Those services are " + str(s))
         for s_ in s:
-            print(s_)
-            cur.execute("SELECT * FROM services WHERE name = '" + s_ + "'")
-            rows = cur.fetchall()
-            print(rows)
+            cur.execute("SELECT type FROM service_index WHERE name =(?)", (s_,))
+            rows = cur.fetchone()
+            if rows != None:
+                row_str_ = str(rows).strip("()',")
+                if row_str_ == "services" and s_ not in list_services:
+                    list_services.append(s_)
+                    logging.info("Creating service " + s_)
+                    create_service(s_, cur)
+                elif row_str_ == "service_groups" and s_ not in list_services:
+                    logging.info("SERVICE GROUP " + s_)
+                    create_service_group(s_, cur)
+        logging.info("Total number of created service " + str(len(list_services)))
+        logging.info("Those services are " + str(list_services))
     else:
         print("Error! cannot create the database connection.")
         logging.warning("Error! cannot create the database connection.")

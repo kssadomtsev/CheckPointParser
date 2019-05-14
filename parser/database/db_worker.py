@@ -7,6 +7,17 @@ import logging
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='../logs/parser_log.log',
                     level=logging.DEBUG)
 
+# Function for delete \t\n
+def create_index_table(conn, table_name, table_name_index):
+    sql_service_index = ''' (name,type)
+              VALUES(?,?) '''
+    cur = conn.cursor()
+    cur.execute("SELECT name FROM "+table_name)
+    rows = cur.fetchall()
+    for row in rows:
+        row_str = str(row).strip("()',")
+        create_net_obj(conn, (row_str, table_name), table_name_index, sql_service_index)
+    conn.commit()
 
 # Function for delete \t\n
 def del_nt(str):

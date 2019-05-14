@@ -1,5 +1,6 @@
 from database import db_worker
 import xml.etree.ElementTree as ET
+from sqlite3 import Error
 
 import logging
 
@@ -63,9 +64,25 @@ def parse_list_service(filename, conn):
             count_services += 1
     conn.commit()
     cur = conn.cursor()
-    cur.execute("CREATE UNIQUE INDEX idx_services_name ON services (name)")
-    cur.execute("CREATE UNIQUE INDEX idx_service_groups_name ON service_groups (name)")
+    try:
+        cur.execute("CREATE UNIQUE INDEX idx_services_name ON services (name)")
+    except Error as e:
+        logging.warning(e)
+        logging.info(str(e))
+    try:
+        cur.execute("CREATE UNIQUE INDEX idx_service_groups_name ON service_groups (name)")
+    except Error as e:
+        logging.warning(e)
+        logging.info(str(e))
     print('Numbers of services and groups = ' + str(count_services))
+    db_worker.create_index_table(conn, "services", "service_index")
+    db_worker.create_index_table(conn, "service_groups", "service_index")
+    cur = conn.cursor()
+    try:
+        cur.execute("CREATE UNIQUE INDEX idx_service_index ON service_index (name)")
+    except Error as e:
+        logging.warning(e)
+        logging.info(str(e))
     f.close()
 
 
@@ -83,10 +100,15 @@ def create_list_service(filepath):
                                          color text,
                                          members text
                                      ); """
+    sql_create_service_index_table = """ CREATE TABLE IF NOT EXISTS service_index (
+                                         name text PRIMARY KEY,
+                                         type text
+                                     ); """
     conn = db_worker.create_connection()
     if conn is not None:
         db_worker.create_table(conn, sql_create_services_table)
         db_worker.create_table(conn, sql_create_service_groups_table)
+        db_worker.create_table(conn, sql_create_service_index_table)
         parse_list_service(filepath + "\\services_new.xml", conn)
     else:
         print("Error! cannot create the database connection.")

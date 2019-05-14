@@ -2,7 +2,7 @@
 import sys
 from xmlformat import formatXML
 from database import service_worker, network_worker, policy_worker
-from importer import import_servces
+from importer import import_servces, import_network_objects
 import logging
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='../logs/parser_log.log',
@@ -17,6 +17,7 @@ def run_parser():
     print("3. Create network database from XML file ")
     print("4. Create security policy database from XML file ")
     print("5. Import related services and service groups to new SMS ")
+    print("6. Import related network objects and groups to new SMS ")
     print("Exit")
     print()
     while True:
@@ -37,7 +38,10 @@ def run_parser():
                 input("Enter full path (include file itself) to formated security policy file: "))
         elif option == "5":
             logging.info("Option 5 was selected")
-            import_servces.create_servces()
+            import_servces.create_services()
+        elif option == "6":
+            logging.info("Option 5 was selected")
+            import_network_objects.create_network_objects()
         elif option == "exit":
             logging.info("Exit")
             sys.exit(1)
