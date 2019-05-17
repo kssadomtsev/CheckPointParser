@@ -7,17 +7,19 @@ import logging
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='../logs/parser_log.log',
                     level=logging.DEBUG)
 
+
 # Function for delete \t\n
 def create_index_table(conn, table_name, table_name_index):
     sql_service_index = ''' (name,type)
               VALUES(?,?) '''
     cur = conn.cursor()
-    cur.execute("SELECT name FROM "+table_name)
+    cur.execute("SELECT name FROM " + table_name)
     rows = cur.fetchall()
     for row in rows:
         row_str = str(row).strip("()',")
         create_net_obj(conn, (row_str, table_name), table_name_index, sql_service_index)
     conn.commit()
+
 
 # Function for delete \t\n
 def del_nt(str):
@@ -35,6 +37,30 @@ def del_CDATA(string_CDATA):
         result = " "
     return result
 
+
+# Function for delete g or g_ for services
+def del_g(string_CDATA):
+    match = re.search(r"^(ggrs_|g_|g(?!r_))(.*)$", string_CDATA, flags=re.UNICODE)
+    if match:
+        logging.info(string_CDATA + " was changed to " + match.group(2))
+        return match.group(2)
+    return string_CDATA
+
+# Function for delete g or g_ for hosts
+def del_g_host(string_CDATA):
+    match = re.search(r"^(g_)(.*)$", string_CDATA, flags=re.UNICODE)
+    if match:
+        logging.info(string_CDATA + " was changed to " + match.group(2))
+        return match.group(2)
+    return string_CDATA
+
+# Function for delete g or g_ for networks
+def del_g_net(string_CDATA):
+    match = re.search(r"^(g)(.*)$", string_CDATA, flags=re.UNICODE)
+    if match:
+        logging.info(string_CDATA + " was changed to " + match.group(2))
+        return match.group(2)
+    return string_CDATA
 
 def create_connection():
     """ create a database connection to a SQLite database """

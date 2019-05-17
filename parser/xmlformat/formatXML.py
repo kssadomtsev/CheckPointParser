@@ -12,7 +12,7 @@ def create_pretty_xml(filename):
         f = open(new_xml + "_new" + ".xml", "w+")
         f.write(xml_pretty_str)
         f.close()
-    print("XML files was formated success. Look at new files with _new suffix")
+    print(filename + " XML file was formated success. Look at new file with _new suffix")
 
 
 # iterate through all .xml files in directory

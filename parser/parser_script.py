@@ -40,7 +40,7 @@ def run_parser():
             logging.info("Option 5 was selected")
             import_servces.create_services()
         elif option == "6":
-            logging.info("Option 5 was selected")
+            logging.info("Option 6 was selected")
             import_network_objects.create_network_objects()
         elif option == "exit":
             logging.info("Exit")

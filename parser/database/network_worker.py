@@ -1,6 +1,7 @@
 from database import db_worker
 import xml.etree.ElementTree as ET
 import re
+from sqlite3 import Error
 
 import logging
 
@@ -265,6 +266,25 @@ def parse_list_network_object(filename, conn):
     logging.info('Numbers of network_group = ' + str(count_network_group))
     logging.info('Numbers of group_with_exception = ' + str(count_group_with_exception))
 
+    db_worker.create_index_table(conn, "cluster_member", "network_object_index")
+    db_worker.create_index_table(conn, "connectra", "network_object_index")
+    db_worker.create_index_table(conn, "gateway_ckp", "network_object_index")
+    db_worker.create_index_table(conn, "gateway_plain", "network_object_index")
+    db_worker.create_index_table(conn, "sofaware_gateway", "network_object_index")
+    db_worker.create_index_table(conn, "gateway_cluster", "network_object_index")
+    db_worker.create_index_table(conn, "address_range", "network_object_index")
+    db_worker.create_index_table(conn, "host_plain", "network_object_index")
+    db_worker.create_index_table(conn, "host_ckp", "network_object_index")
+    db_worker.create_index_table(conn, "network", "network_object_index")
+    db_worker.create_index_table(conn, "group_with_exception", "network_object_index")
+    db_worker.create_index_table(conn, "network_object_group", "network_object_index")
+    cur = conn.cursor()
+    try:
+        cur.execute("CREATE UNIQUE INDEX idx_network_object_index ON network_object_index (name)")
+    except Error as e:
+        logging.warning(e)
+        logging.info(str(e))
+
     f.close()
 
 
@@ -343,6 +363,10 @@ def create_list_network_object(filepath):
                                          color text,
                                          members text
                                      ); """
+    sql_create_network_object_index_table = """ CREATE TABLE IF NOT EXISTS network_object_index (
+                                         name text PRIMARY KEY,
+                                         type text
+                                     ); """
 
     conn = db_worker.create_connection()
     if conn is not None:
@@ -358,6 +382,7 @@ def create_list_network_object(filepath):
         db_worker.create_table(conn, sql_create_network_table)
         db_worker.create_table(conn, sql_create_group_with_exception_table)
         db_worker.create_table(conn, sql_create_network_object_group_table)
+        db_worker.create_table(conn, sql_create_network_object_index_table)
         parse_list_network_object(filepath + "\\network_objects_new.xml", conn)
     else:
         print("Error! cannot create the database connection.")

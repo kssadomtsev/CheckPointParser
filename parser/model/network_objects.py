@@ -22,3 +22,31 @@ class service_group:
         self.comments = comments
         self.color = color
         self.members = members
+
+
+# Define class "host plain"
+class host_plain:
+    def __init__(self, name, comments, color, ip_address):
+        self.name = name
+        self.comments = comments
+        self.color = color
+        self.ip_address = ip_address
+
+
+# Define class "network"
+class network:
+    def __init__(self, name, comments, color, ip_address):
+        self.name = name
+        self.comments = comments
+        self.color = color
+        self.ip_address = ip_address
+
+
+# Define class "network"
+class address_range:
+    def __init__(self, name, comments, color, ipaddr_first, ipaddr_last):
+        self.name = name
+        self.comments = comments
+        self.color = color
+        self.ipaddr_first = ipaddr_first
+        self.ipaddr_last = ipaddr_last
