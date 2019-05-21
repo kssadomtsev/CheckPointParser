@@ -4,9 +4,10 @@ from sqlite3 import Error
 
 import logging
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='../logs/parser_log.log',
-                    level=logging.DEBUG)
-
+logging.getLogger('').handlers = []
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
+                    filename="..\\logs\\parser_log.log",
+                    level=logging.DEBUG, filemode='w')
 
 def parse_list_service(filename, conn):
     f = open(filename, 'rU')

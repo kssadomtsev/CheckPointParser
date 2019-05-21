@@ -2,8 +2,10 @@ from database import db_worker
 import xml.etree.ElementTree as ET
 import logging
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='../logs/parser_log.log',
-                    level=logging.DEBUG)
+logging.getLogger('').handlers = []
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
+                    filename="..\\logs\\parser_log.log",
+                    level=logging.DEBUG, filemode='w')
 
 
 def parse_list_security_policy(filename, conn):

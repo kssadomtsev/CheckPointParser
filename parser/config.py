@@ -1,0 +1,6 @@
+api_server = ""
+username = ""
+password = ""
+domain = ""
+package = ""
+layer=""

@@ -1,14 +1,45 @@
-import sys
 from database import db_worker
 from model import network_objects
 from importer import api_worker
 import logging
 import ipaddress
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='../logs/parser_log.log',
-                    level=logging.DEBUG)
-
+logging.getLogger('').handlers = []
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
+                    filename="..\\logs\\parser_log.log",
+                    level=logging.DEBUG, filemode='w')
 list_network_objects = []
+
+obj_should_be_fake = (
+    "cluster_member", "connectra", "gateway_ckp", "gateway_plain", "sofaware_gateway", "gateway_cluster",
+    "host_ckp", "group_with_exception")
+
+
+def get_modified_members(members, cur):
+    result = []
+    for member in members:
+        cur.execute("SELECT type FROM network_object_index WHERE name =(?)", (member,))
+        rows = cur.fetchone()
+        row_str_ = str(rows).strip("()',")
+        logging.info(row_str_)
+        if row_str_ == "host_plain":
+            result.append(db_worker.del_g_host(member))
+        elif row_str_ == "network":
+            result.append(db_worker.del_g_net(member))
+        elif row_str_ == "address_range":
+            result.append(member)
+        elif row_str_ in obj_should_be_fake:
+            result.append("F_" + member)
+        elif row_str_ == "network_object_group":
+            result.append(db_worker.del_g_group(member))
+    return result
+
+
+def get_members(group, cur):
+    cur.execute("SELECT members FROM network_object_group WHERE name='%s'" % (group,))
+    rows = cur.fetchone()
+    row_str = str(rows).strip("()',")
+    return row_str.split(",")
 
 
 def create_host_plain(host_plain, cur):
@@ -48,6 +79,58 @@ def create_address_range(address_range, cur):
                               "ignore-warnings": "true"})
 
 
+def create_fake_object(host_plain):
+    logging.info("Trying to add to SMS fake object " + host_plain)
+    api_worker.create_object("add-host",
+                             {"name": host_plain, "ip-address": "1.1.1.1", "color": "green", "ignore-warnings": "true"})
+
+
+def create_network_object_group(network_object_group, cur):
+    for s_ in get_members(network_object_group, cur):
+        logging.info(s_)
+        cur.execute("SELECT type FROM network_object_index WHERE name =(?)", (s_,))
+        rows = cur.fetchone()
+        #       logging.info(rows_)
+        row_str_ = str(rows).strip("()',")
+        logging.info(row_str_)
+        print(s_ + " " + row_str_)
+        if row_str_ == "host_plain" and db_worker.del_g_host(s_) not in list_network_objects:
+            s2_ = db_worker.del_g_host(s_)
+            list_network_objects.append(s2_)
+            logging.info("Creating host_plain " + s2_)
+            create_host_plain(s_, cur)
+        elif row_str_ == "network" and db_worker.del_g_net(s_) not in list_network_objects:
+            s2_ = db_worker.del_g_net(s_)
+            list_network_objects.append(s2_)
+            logging.info("Creating network " + s2_)
+            create_network(s_, cur)
+        elif row_str_ == "address_range" and s_ not in list_network_objects:
+            list_network_objects.append(s_)
+            logging.info("Creating address_range " + s_)
+            create_address_range(s_, cur)
+        elif row_str_ in obj_should_be_fake and "F_" + s_ not in list_network_objects:
+            list_network_objects.append("F_" + s_)
+            logging.info("Creating " + row_str_ + " " + "F_" + s_)
+            create_fake_object("F_" + s_)
+        elif row_str_ == "network_object_group" and db_worker.del_g_group(s_) not in list_network_objects:
+            s2_ = db_worker.del_g_group(s_)
+            list_network_objects.append(s2_)
+            logging.info("Creating network_object_group " + s2_)
+            create_network_object_group(s_, cur)
+    cur.execute("SELECT * FROM network_object_group WHERE name='%s'" % (network_object_group,))
+    rows = cur.fetchone()
+    print(rows)
+    network_object_group_obj = network_objects.network_object_group(db_worker.del_g_group(rows[0]), rows[1],
+                                                                    rows[2].lower(), rows[3])
+    logging.info("Trying to add to SMS network_object_group " + network_object_group_obj.name)
+    print("Trying to add to SMS network_object_group " + network_object_group_obj.name)
+    api_worker.create_object("add-group",
+                             {"name": network_object_group_obj.name, "comments": network_object_group_obj.comments,
+                              "color": api_worker.choose_color(network_object_group_obj),
+                              "members": get_modified_members(network_object_group_obj.members.split(","), cur),
+                              "ignore-warnings": "true"})
+
+
 def create_network_objects():
     conn = db_worker.create_connection()
     if conn is not None:
@@ -71,6 +154,7 @@ def create_network_objects():
             rows = cur.fetchone()
             if rows != None:
                 row_str_ = str(rows).strip("()',")
+                print(s_ + " " + row_str_)
                 if row_str_ == "host_plain" and db_worker.del_g_host(s_) not in list_network_objects:
                     s2_ = db_worker.del_g_host(s_)
                     list_network_objects.append(s2_)
@@ -85,6 +169,18 @@ def create_network_objects():
                     list_network_objects.append(s_)
                     logging.info("Creating address_range " + s_)
                     create_address_range(s_, cur)
+                elif row_str_ in obj_should_be_fake and "F_" + s_ not in list_network_objects:
+                    list_network_objects.append("F_" + s_)
+                    logging.info("Creating " + row_str_ + " " + "F_" + s_)
+                    create_fake_object("F_" + s_)
+                elif row_str_ == "network_object_group" and db_worker.del_g_group(s_) not in list_network_objects:
+                    s2_ = db_worker.del_g_group(s_)
+                    list_network_objects.append(s2_)
+                    logging.info("Creating network_object_group " + s2_)
+                    create_network_object_group(s_, cur)
+        logging.info("Total number of created network_object " + str(len(list_network_objects)))
+        logging.info("Those network_object are " + str(list_network_objects))
+
     else:
         print("Error! cannot create the database connection.")
         logging.warning("Error! cannot create the database connection.")

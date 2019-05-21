@@ -1,12 +1,15 @@
 #!/usr/bin/python
-import sys
+import sys, os
 from xmlformat import formatXML
 from database import service_worker, network_worker, policy_worker
-from importer import import_servces, import_network_objects
+from importer import import_servces, import_network_objects, import_rules
 import logging
+import config
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='../logs/parser_log.log',
-                    level=logging.DEBUG)
+logging.getLogger('').handlers = []
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
+                    filename="..\\logs\\parser_log.log",
+                    level=logging.DEBUG, filemode='w')
 
 
 def run_parser():
@@ -18,6 +21,7 @@ def run_parser():
     print("4. Create security policy database from XML file ")
     print("5. Import related services and service groups to new SMS ")
     print("6. Import related network objects and groups to new SMS ")
+    print("7. Import related rules to new SMS ")
     print("Exit")
     print()
     while True:
@@ -38,10 +42,27 @@ def run_parser():
                 input("Enter full path (include file itself) to formated security policy file: "))
         elif option == "5":
             logging.info("Option 5 was selected")
+            config.api_server = input("Enter MDS IP: ")
+            config.username = input("Enter username: ")
+            config.password = input("Enter password: ")
+            config.domain = input("Enter domain name: ")
             import_servces.create_services()
         elif option == "6":
             logging.info("Option 6 was selected")
+            config.api_server = input("Enter MDS IP: ")
+            config.username = input("Enter username: ")
+            config.password = input("Enter password: ")
+            config.domain = input("Enter domain name: ")
             import_network_objects.create_network_objects()
+        elif option == "7":
+            logging.info("Option 7 was selected")
+            config.api_server = input("Enter MDS IP: ")
+            config.username = input("Enter username: ")
+            config.password = input("Enter password: ")
+            config.domain = input("Enter domain name: ")
+            config.package = input("Enter package name: ")
+            config.layer = input("Enter layer name: ")
+            import_rules.create_rules()
         elif option == "exit":
             logging.info("Exit")
             sys.exit(1)

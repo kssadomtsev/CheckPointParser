@@ -3,8 +3,10 @@ from model import network_objects
 from importer import api_worker
 import logging
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='../logs/parser_log.log',
-                    level=logging.DEBUG)
+logging.getLogger('').handlers = []
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
+                    filename="..\\logs\\parser_log.log",
+                    level=logging.DEBUG, filemode='w')
 list_services = []
 
 

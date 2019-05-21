@@ -4,8 +4,10 @@ from pathlib import Path
 import re
 import logging
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='../logs/parser_log.log',
-                    level=logging.DEBUG)
+logging.getLogger('').handlers = []
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
+                    filename="..\\logs\\parser_log.log",
+                    level=logging.DEBUG, filemode='w')
 
 
 # Function for delete \t\n
@@ -54,9 +56,17 @@ def del_g_host(string_CDATA):
         return match.group(2)
     return string_CDATA
 
-# Function for delete g or g_ for networks
+# Function for delete g for networks
 def del_g_net(string_CDATA):
     match = re.search(r"^(g)(.*)$", string_CDATA, flags=re.UNICODE)
+    if match:
+        logging.info(string_CDATA + " was changed to " + match.group(2))
+        return match.group(2)
+    return string_CDATA
+
+# Function for delete g for networks
+def del_g_group(string_CDATA):
+    match = re.search(r"^(g(?!r_))(.*)$", string_CDATA, flags=re.UNICODE)
     if match:
         logging.info(string_CDATA + " was changed to " + match.group(2))
         return match.group(2)
