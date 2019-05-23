@@ -112,3 +112,26 @@ def create_new_rule(rule):
             print("Failed to add the access-rule: '{}', Error: {}".format(rule.name, add_rule_response.error_message))
             logging.warning(
                 "Failed to add the access-rule: '{}', Error: {}".format(rule.name, add_rule_response.error_message))
+
+
+def publish_changes():
+    client_args = APIClientArgs(server=config.api_server)
+    with APIClient(client_args) as client:
+        client.debug_file = "api_calls.json"
+        if client.check_fingerprint() is False:
+            print("Could not get the server's fingerprint - Check connectivity with the server.")
+            logging.warning("Could not get the server's fingerprint - Check connectivity with the server.")
+            sys.exit(1)
+        login_res = client.login(config.username, config.password, "False", config.domain)
+        if login_res.success is False:
+            print("Login failed: {}".format(login_res.error_message))
+            logging.warning("Login failed: {}".format(login_res.error_message))
+            sys.exit(1)
+        set_package = client.api_call("set-package", {"name": config.package})
+        publish_res = client.api_call("publish", {})
+        if publish_res.success:
+            print("The changes were published successfully.")
+            logging.info("The changes were published successfully.")
+        else:
+            print("Failed to publish the changes.")
+            logging.warning("Failed to publish the changes.")
