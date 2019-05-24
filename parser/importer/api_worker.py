@@ -43,75 +43,55 @@ def get_tcp_services(client):
     return tcp_services_ports
 
 
-def create_object(command, parametrs):
+def login():
     client_args = APIClientArgs(server=config.api_server)
-    with APIClient(client_args) as client:
-        client.debug_file = "api_calls.json"
-        if client.check_fingerprint() is False:
-            print("Could not get the server's fingerprint - Check connectivity with the server.")
-            logging.warning("Could not get the server's fingerprint - Check connectivity with the server.")
-            sys.exit(1)
-        login_res = client.login(config.username, config.password, "False", config.domain)
-        if login_res.success is False:
-            print("Login failed: {}".format(login_res.error_message))
-            logging.warning("Login failed: {}".format(login_res.error_message))
-            sys.exit(1)
-        add_serv_response = client.api_call(command, parametrs)
-        #        print(add_serv_response)
-        logging.info(add_serv_response)
-        #        print(add_serv_response.data)
-        print(add_serv_response.data.get("code"))
-        logging.info("Response is :")
-        logging.info(add_serv_response.data.get("code"))
-        if add_serv_response is False:
-            print(format(add_serv_response.error_message))
-            logging.warning(format(add_serv_response.error_message))
-            sys.exit(1)
-        elif add_serv_response.data.get("code") != "err_validation_failed":
-            publish_res = client.api_call("publish", {})
-            if publish_res.success:
-                print("The changes were published successfully.")
-                logging.info("The changes were published successfully.")
-            else:
-                print("Failed to publish the changes.")
-                logging.warning("Failed to publish the changes.")
+    client = APIClient(client_args)
+    client.debug_file = "api_calls.json"
+    if client.check_fingerprint() is False:
+        print("Could not get the server's fingerprint - Check connectivity with the server.")
+        logging.warning("Could not get the server's fingerprint - Check connectivity with the server.")
+        sys.exit(1)
+    login_res = client.login(config.username, config.password, "True", config.domain)
+    if login_res.success is False:
+        print("Login failed: {}".format(login_res.error_message))
+        logging.warning("Login failed: {}".format(login_res.error_message))
+        sys.exit(1)
+    config.session = client
+
+
+def create_object(command, parametrs):
+    client = config.session
+    add_serv_response = client.api_call(command, parametrs)
+    logging.info(add_serv_response)
+    print(add_serv_response.data.get("code"))
+    logging.info("Response is :")
+    logging.info(add_serv_response.data.get("code"))
+    if add_serv_response.success:
+        return None
+    else:
+        logging.warning(format(add_serv_response.error_message))
+        return format(add_serv_response.error_message)
 
 
 def create_new_rule(rule):
-    client_args = APIClientArgs(server=config.api_server)
-    with APIClient(client_args) as client:
-        client.debug_file = "api_calls.json"
-        if client.check_fingerprint() is False:
-            print("Could not get the server's fingerprint - Check connectivity with the server.")
-            logging.warning("Could not get the server's fingerprint - Check connectivity with the server.")
-            sys.exit(1)
-        login_res = client.login(config.username, config.password, "False", config.domain)
-        if login_res.success is False:
-            print("Login failed: {}".format(login_res.error_message))
-            logging.warning("Login failed: {}".format(login_res.error_message))
-            sys.exit(1)
-        set_package = client.api_call("set-package", {"name": config.package})
-        add_rule_response = client.api_call("add-access-rule",
-                                            {"name": rule.name, "layer": config.layer,
-                                             "position": "bottom",
-                                             "action": rule.action, "destination": rule.dst, "source": rule.src,
-                                             "service": rule.services, "comments": rule.comments, "track": "log"})
-        logging.info("Response is :")
-        logging.info(add_rule_response.data.get("code"))
-        if add_rule_response.success:
-            print("The rule: '{}' has been added successfully".format(rule.name))
-            logging.info("The rule: '{}' has been added successfully".format(rule.name))
-            publish_res = client.api_call("publish", {})
-            if publish_res.success:
-                print("The changes were published successfully.")
-                logging.info("The changes were published successfully.")
-            else:
-                print("Failed to publish the changes.")
-                logging.warning("Failed to publish the changes.")
-        else:
-            print("Failed to add the access-rule: '{}', Error: {}".format(rule.name, add_rule_response.error_message))
-            logging.warning(
-                "Failed to add the access-rule: '{}', Error: {}".format(rule.name, add_rule_response.error_message))
+    client = config.session
+    set_package = client.api_call("set-package", {"name": config.package})
+    add_rule_response = client.api_call("add-access-rule",
+                                        {"name": rule.name, "layer": config.layer,
+                                         "position": "bottom",
+                                         "action": rule.action, "destination": rule.dst, "source": rule.src,
+                                         "service": rule.services, "comments": rule.comments, "track": "log"})
+    logging.info("Response is :")
+    logging.info(add_rule_response.data.get("code"))
+    if add_rule_response.success:
+        print("The rule: '{}' has been added successfully".format(rule.name))
+        logging.info("The rule: '{}' has been added successfully".format(rule.name))
+        return None
+    else:
+        print("Failed to add the access-rule: '{}', Error: {}".format(rule.name, add_rule_response.error_message))
+        logging.warning(
+            "Failed to add the access-rule: '{}', Error: {}".format(rule.name, add_rule_response.error_message))
+        return "Failed to add the access-rule: '{}', Error: {}".format(rule.name, add_rule_response.error_message)
 
 
 def publish_changes():
@@ -122,7 +102,7 @@ def publish_changes():
             print("Could not get the server's fingerprint - Check connectivity with the server.")
             logging.warning("Could not get the server's fingerprint - Check connectivity with the server.")
             sys.exit(1)
-        login_res = client.login(config.username, config.password, "False", config.domain)
+        login_res = client.login(config.username, config.password, "True", config.domain)
         if login_res.success is False:
             print("Login failed: {}".format(login_res.error_message))
             logging.warning("Login failed: {}".format(login_res.error_message))

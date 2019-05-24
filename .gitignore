@@ -6,3 +6,4 @@ lib
 venv
 *.txt
 *.json
+docs

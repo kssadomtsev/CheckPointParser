@@ -1,13 +1,16 @@
 from database import db_worker
 from model import network_objects
-from importer import api_worker
+from importer import api_worker, output
 import logging
 
 logging.getLogger('').handlers = []
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
                     filename="..\\logs\\parser_log.log",
                     level=logging.DEBUG, filemode='w')
+
 list_services = []
+success_added_services = []
+error_added_services = {}
 
 
 def get_members(group, cur):
@@ -39,11 +42,15 @@ def create_service_group(group, cur):
     service_group_obj = network_objects.service_group(rows[0], rows[1], rows[2].lower(), rows[3])
     logging.info("Trying to add to SMS service group " + service_group_obj.name)
     print("Trying to add to SMS service group " + service_group_obj.name)
-    api_worker.create_object("add-service-group",
-                             {"name": service_group_obj.name, "comments": service_group_obj.comments,
-                              "color": api_worker.choose_color(service_group_obj),
-                              "members": service_group_obj.members.split(","),
-                              "ignore-warnings": "true"})
+    response = api_worker.create_object("add-service-group",
+                                        {"name": service_group_obj.name, "comments": service_group_obj.comments,
+                                         "color": api_worker.choose_color(service_group_obj),
+                                         "members": service_group_obj.members.split(","),
+                                         "ignore-warnings": "true"})
+    if response is None:
+        success_added_services.append(service_group_obj.name)
+    else:
+        error_added_services[service_group_obj.name] = response
 
 
 def create_service(service, cur):
@@ -51,29 +58,38 @@ def create_service(service, cur):
     rows = cur.fetchone()
     service_obj = network_objects.service(rows[0], rows[1], rows[2], rows[3].lower(), rows[4])
     if service_obj.type == "tcp":
-        print("TCP servcie!!")
+        #        print("TCP servcie!!")
         service_obj.print_service()
         logging.info("Trying to add to SMS service " + service_obj.name)
-        api_worker.create_object("add-service-tcp", {"name": service_obj.name, "comments": service_obj.comments,
-                                                     "port": service_obj.port,
-                                                     "color": api_worker.choose_color(service_obj),
-                                                     "ignore-warnings": "true"})
+        response = api_worker.create_object("add-service-tcp",
+                                            {"name": service_obj.name, "comments": service_obj.comments,
+                                             "port": service_obj.port,
+                                             "color": api_worker.choose_color(service_obj),
+                                             "ignore-warnings": "true"})
+        if response is None:
+            success_added_services.append(service_obj.name)
+        else:
+            error_added_services[service_obj.name] = response
     elif service_obj.type == "udp":
-        print("UDP servcie!!")
         service_obj.print_service()
         logging.info("Trying to add to SMS service " + service_obj.name)
-        api_worker.create_object("add-service-udp", {"name": service_obj.name, "comments": service_obj.comments,
-                                                     "port": service_obj.port,
-                                                     "color": api_worker.choose_color(service_obj),
-                                                     "ignore-warnings": "true"})
+        response = api_worker.create_object("add-service-udp",
+                                            {"name": service_obj.name, "comments": service_obj.comments,
+                                             "port": service_obj.port,
+                                             "color": api_worker.choose_color(service_obj),
+                                             "ignore-warnings": "true"})
+        if response is None:
+            success_added_services.append(service_obj.name)
+        else:
+            error_added_services[service_obj.name] = response
     else:
-        print("Other!!!!!!!!!!!!!!")
         logging.info("Other service " + service_obj.name)
         service_obj.print_service()
 
 
 def create_services():
     conn = db_worker.create_connection()
+    api_worker.login()
     if conn is not None:
         cur = conn.cursor()
         cur.execute("SELECT DISTINCT services FROM security_policy")
@@ -90,7 +106,7 @@ def create_services():
         for s_ in s:
             cur.execute("SELECT type FROM service_index WHERE name =(?)", (s_,))
             rows = cur.fetchone()
-            if rows != None:
+            if rows is not None:
                 row_str_ = str(rows).strip("()',")
                 if row_str_ == "services" and s_ not in list_services:
                     list_services.append(s_)
@@ -99,8 +115,15 @@ def create_services():
                 elif row_str_ == "service_groups" and s_ not in list_services:
                     logging.info("SERVICE GROUP " + s_)
                     create_service_group(s_, cur)
-        logging.info("Total number of created service " + str(len(list_services)))
-        logging.info("Those services are " + str(list_services))
+        #           if rows is None:
+        #               api_worker.publish_changes()
+        api_worker.publish_changes()
+        logging.info("Total number of analazed service " + str(len(list_services)))
+        # logging.info("Those services are " + str(list_services))
+        logging.info("Result of adding new services to new SMS:")
+        logging.info("Without errors was added following count of services: " + str(len(success_added_services)))
+        logging.info("With errors wasn't added following count of services: " + str(len(error_added_services)))
+        output.print_to_xlsx(error_added_services, "service_error.xlsx")
     else:
         print("Error! cannot create the database connection.")
         logging.warning("Error! cannot create the database connection.")

@@ -1,6 +1,6 @@
 from database import db_worker
 from model import network_objects
-from importer import api_worker
+from importer import api_worker,output
 import logging
 import ipaddress
 
@@ -9,11 +9,19 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S
                     filename="..\\logs\\parser_log.log",
                     level=logging.DEBUG, filemode='w')
 list_network_objects = []
+success_added_obj = []
+error_added_obj = {}
+
 
 obj_should_be_fake = (
     "cluster_member", "connectra", "gateway_ckp", "gateway_plain", "sofaware_gateway", "gateway_cluster",
     "host_ckp", "group_with_exception")
 
+def response_analyze(response, obj_name):
+    if response is None:
+        success_added_obj.append(obj_name)
+    else:
+        error_added_obj[obj_name] = response
 
 def get_modified_members(members, cur):
     result = []
@@ -47,10 +55,11 @@ def create_host_plain(host_plain, cur):
     rows = cur.fetchone()
     host_plain_obj = network_objects.host_plain(db_worker.del_g_host(rows[0]), rows[1], rows[2].lower(), rows[3])
     logging.info("Trying to add to SMS host_plain " + host_plain_obj.name)
-    api_worker.create_object("add-host", {"name": host_plain_obj.name, "comments": host_plain_obj.comments,
+    response = api_worker.create_object("add-host", {"name": host_plain_obj.name, "comments": host_plain_obj.comments,
                                           "ip-address": host_plain_obj.ip_address,
                                           "color": api_worker.choose_color(host_plain_obj),
                                           "ignore-warnings": "true"})
+    response_analyze(response, host_plain_obj.name)
 
 
 def create_network(network, cur):
@@ -59,11 +68,12 @@ def create_network(network, cur):
     network_obj = network_objects.host_plain(db_worker.del_g_net(rows[0]), rows[1], rows[2].lower(), rows[3])
     logging.info("Trying to add to SMS network " + network_obj.name + " " + network_obj.ip_address)
     ip = ipaddress.ip_network(network_obj.ip_address)
-    api_worker.create_object("add-network", {"name": network_obj.name, "comments": network_obj.comments,
+    response = api_worker.create_object("add-network", {"name": network_obj.name, "comments": network_obj.comments,
                                              "subnet": str(ip.network_address),
                                              "mask-length": str(ip.prefixlen),
                                              "color": api_worker.choose_color(network_obj),
                                              "ignore-warnings": "true"})
+    response_analyze(response,  network_obj.name)
 
 
 def create_address_range(address_range, cur):
@@ -71,18 +81,19 @@ def create_address_range(address_range, cur):
     rows = cur.fetchone()
     address_range_obj = network_objects.address_range(rows[0], rows[1], rows[2].lower(), rows[3], rows[4])
     logging.info("Trying to add to SMS address_range " + address_range_obj.name)
-    api_worker.create_object("add-address-range",
+    response = api_worker.create_object("add-address-range",
                              {"name": address_range_obj.name, "comments": address_range_obj.comments,
                               "ip-address-first": address_range_obj.ipaddr_first,
                               "ip-address-last": address_range_obj.ipaddr_last,
                               "color": api_worker.choose_color(address_range_obj),
                               "ignore-warnings": "true"})
-
+    response_analyze(response,  address_range_obj.name)
 
 def create_fake_object(host_plain):
     logging.info("Trying to add to SMS fake object " + host_plain)
-    api_worker.create_object("add-host",
+    response = api_worker.create_object("add-host",
                              {"name": host_plain, "ip-address": "1.1.1.1", "color": "green", "ignore-warnings": "true"})
+    response_analyze(response, host_plain)
 
 
 def create_network_object_group(network_object_group, cur):
@@ -124,15 +135,17 @@ def create_network_object_group(network_object_group, cur):
                                                                     rows[2].lower(), rows[3])
     logging.info("Trying to add to SMS network_object_group " + network_object_group_obj.name)
     print("Trying to add to SMS network_object_group " + network_object_group_obj.name)
-    api_worker.create_object("add-group",
+    response = api_worker.create_object("add-group",
                              {"name": network_object_group_obj.name, "comments": network_object_group_obj.comments,
                               "color": api_worker.choose_color(network_object_group_obj),
                               "members": get_modified_members(network_object_group_obj.members.split(","), cur),
                               "ignore-warnings": "true"})
+    response_analyze(response, network_object_group_obj.name)
 
 
 def create_network_objects():
     conn = db_worker.create_connection()
+    api_worker.login()
     if conn is not None:
         cur = conn.cursor()
         cur.execute("SELECT DISTINCT src FROM security_policy")
@@ -178,8 +191,13 @@ def create_network_objects():
                     list_network_objects.append(s2_)
                     logging.info("Creating network_object_group " + s2_)
                     create_network_object_group(s_, cur)
-        logging.info("Total number of created network_object " + str(len(list_network_objects)))
-        logging.info("Those network_object are " + str(list_network_objects))
+        api_worker.publish_changes()
+        logging.info("Total number of analazed network_object " + str(len(list_network_objects)))
+        # logging.info("Those network_object are " + str(list_network_objects))
+        logging.info("Result of adding new network objects to new SMS:")
+        logging.info("Without errors was added following count of network objects: " + str(len(success_added_obj)))
+        logging.info("With errors wasn't added following count of network objects: " + str(len(error_added_obj)))
+        output.print_to_xlsx(error_added_obj, "network_objects.xlsx")
 
     else:
         print("Error! cannot create the database connection.")

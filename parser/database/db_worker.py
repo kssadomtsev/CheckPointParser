@@ -48,6 +48,7 @@ def del_g(string_CDATA):
         return match.group(2)
     return string_CDATA
 
+
 # Function for delete g or g_ for hosts
 def del_g_host(string_CDATA):
     match = re.search(r"^(g_)(.*)$", string_CDATA, flags=re.UNICODE)
@@ -55,6 +56,7 @@ def del_g_host(string_CDATA):
         logging.info(string_CDATA + " was changed to " + match.group(2))
         return match.group(2)
     return string_CDATA
+
 
 # Function for delete g for networks
 def del_g_net(string_CDATA):
@@ -64,6 +66,7 @@ def del_g_net(string_CDATA):
         return match.group(2)
     return string_CDATA
 
+
 # Function for delete g for networks
 def del_g_group(string_CDATA):
     match = re.search(r"^(g(?!r_))(.*)$", string_CDATA, flags=re.UNICODE)
@@ -71,6 +74,7 @@ def del_g_group(string_CDATA):
         logging.info(string_CDATA + " was changed to " + match.group(2))
         return match.group(2)
     return string_CDATA
+
 
 def create_connection():
     """ create a database connection to a SQLite database """
