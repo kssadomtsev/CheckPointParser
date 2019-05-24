@@ -59,11 +59,13 @@ class network_object_group:
 
 # Define class "rule"
 class security_rule:
-    def __init__(self, number, name, src, dst, services, action, comments):
+    def __init__(self, number, name, src, src_neg, dst, dst_neg, services, action, comments):
         self.number = number
         self.name = name
         self.src = src
+        self.src_neg = src_neg
         self.dst = dst
+        self.dst_neg = dst_neg
         self.services = services
         self.action = action
         self.comments = comments

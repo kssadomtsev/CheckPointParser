@@ -25,7 +25,7 @@ def run_parser():
         option = input("Please enter needed option as number without dot or exit:").lower()
         if option == "1":
             logging.info("Option 1 was selected")
-            formatXML.iterate_dir(config.xml_dir)
+            #formatXML.iterate_dir(config.xml_dir)
             service_worker.create_list_service(config.xml_dir)
             network_worker.create_list_network_object(config.xml_dir)
             policy_worker.create_list_security_policy(config.xml_policy_file)

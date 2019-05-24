@@ -197,7 +197,7 @@ def create_network_objects():
         logging.info("Result of adding new network objects to new SMS:")
         logging.info("Without errors was added following count of network objects: " + str(len(success_added_obj)))
         logging.info("With errors wasn't added following count of network objects: " + str(len(error_added_obj)))
-        output.print_to_xlsx(error_added_obj, "network_objects.xlsx")
+        output.print_to_xlsx(error_added_obj, "network_objects_error.xlsx")
 
     else:
         print("Error! cannot create the database connection.")

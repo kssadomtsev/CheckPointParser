@@ -79,7 +79,9 @@ def create_new_rule(rule):
     add_rule_response = client.api_call("add-access-rule",
                                         {"name": rule.name, "layer": config.layer,
                                          "position": "bottom",
-                                         "action": rule.action, "destination": rule.dst, "source": rule.src,
+                                         "action": rule.action, "destination": rule.dst,
+                                         "destination-negate": rule.dst_neg, "source": rule.src,
+                                         "source-negate": rule.src_neg,
                                          "service": rule.services, "comments": rule.comments, "track": "log"})
     logging.info("Response is :")
     logging.info(add_rule_response.data.get("code"))
