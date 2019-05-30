@@ -154,6 +154,7 @@ def filter_rules(flag):
                     for src_obj in src:
                         if src_obj.name.startswith("F_"):
                             temp_src.append(src_obj.name)
+                            src_fil = 1
                         elif src_obj.is_in_nets_list(nets) == 1 and row[5] == "False":
                             temp_src.append(src_obj.name)
                             src_fil = 1
@@ -170,6 +171,7 @@ def filter_rules(flag):
                     for dst_obj in dst:
                         if dst_obj.name.startswith("F_"):
                             temp_dst.append(dst_obj.name)
+                            dst_fil = 1
                         elif dst_obj.is_in_nets_list(nets) == 1 and row[7] == "False":
                             temp_dst.append(dst_obj.name)
                             dst_fil = 1
