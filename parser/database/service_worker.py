@@ -15,7 +15,7 @@ def parse_list_service(filename, conn):
               VALUES(?,?,?,?,?) '''
     sql_service_group = ''' (name,comments,color,members)
               VALUES(?,?,?,?) '''
-    tree_services = ET.parse(filename, ET.XMLParser(encoding="cp1251"))
+    tree_services = ET.parse(filename)
     root_services = tree_services.getroot()
     count_services = 0
     for service_ in root_services.findall('service'):

@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import ipaddress
 
 # Define class "service"
 class service:
@@ -30,6 +31,15 @@ class host_plain:
         self.color = color
         self.ip_address = ip_address
 
+    def is_in_nets_list(self, nets):
+        print(self.name)
+        ip_address_v4 = ipaddress.IPv4Address(self.ip_address)
+        print(ip_address_v4)
+        for net in nets:
+            if ip_address_v4 in net:
+                return 1
+        return 0
+
 
 # Define class "network"
 class network:
@@ -38,6 +48,15 @@ class network:
         self.comments = comments
         self.color = color
         self.ip_address = ip_address
+
+    def is_in_nets_list(self, nets):
+        print(self.name)
+        ip_address_v4 = ipaddress.IPv4Network(self.ip_address)
+        print(ip_address_v4)
+        for net in nets:
+            if ip_address_v4.overlaps(net):
+                return 1
+        return 0
 
 
 # Define class "address_range"
@@ -49,6 +68,15 @@ class address_range:
         self.ipaddr_first = ipaddr_first
         self.ipaddr_last = ipaddr_last
 
+    def is_in_nets_list(self, nets):
+        ip_address_v4_first = ipaddress.IPv4Address(self.ipaddr_first)
+        ip_address_v4_last = ipaddress.IPv4Address(self.ipaddr_last)
+        for net in nets:
+            if ip_address_v4_first <= net.network_address <= ip_address_v4_last:
+                return 1
+        return 0
+
+
 # Define class "network_object_group"
 class network_object_group:
     def __init__(self, name, comments, color, members):
@@ -56,6 +84,16 @@ class network_object_group:
         self.comments = comments
         self.color = color
         self.members = members
+
+    def is_in_nets_list(self, nets):
+        for member in self.members:
+            if not member.name.startswith("F_"):
+                if member.is_in_nets_list(nets) == 1:
+                    return 1
+        return 0
+
+
+
 
 # Define class "rule"
 class security_rule:

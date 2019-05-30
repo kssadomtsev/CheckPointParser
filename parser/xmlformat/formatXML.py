@@ -9,8 +9,9 @@ def create_pretty_xml(filename):
         xml = parseString(xmldata.read())
         xml_pretty_str = xml.toprettyxml()
         new_xml = os.path.splitext(filename)[0]
-        f = open(new_xml + "_new" + ".xml", "w+")
-        f.write(xml_pretty_str)
+        f = open(new_xml + "_new" + ".xml", "w+", encoding='utf8')
+        for content in xml_pretty_str:
+            f.write(content)
         f.close()
     print(filename + " XML file was formated success. Look at new file with _new suffix")
 

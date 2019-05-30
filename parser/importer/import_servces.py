@@ -21,6 +21,7 @@ def get_members(group, cur):
 
 
 def create_service_group(group, cur):
+    n = 0
     for row in get_members(group, cur):
         logging.info(row)
         cur.execute("SELECT type FROM service_index WHERE name =(?)", (row,))
@@ -34,6 +35,11 @@ def create_service_group(group, cur):
             create_service(row, cur)
         elif row_str == "service_groups" and row not in list_services:
             create_service_group(row, cur)
+        n = n + 1
+        if n == 100:
+            api_worker.publish_changes()
+            api_worker.login()
+            n = 0
     list_services.append(group)
     logging.info("Creating service group " + group)
     cur.execute("SELECT * FROM service_groups WHERE name='%s'" % (group,))
@@ -103,6 +109,7 @@ def create_services():
         s.update(list)
         logging.info("Total number of unique services in rules " + str(len(s)))
         logging.info("Those services are " + str(s))
+        n = 0
         for s_ in s:
             cur.execute("SELECT type FROM service_index WHERE name =(?)", (s_,))
             rows = cur.fetchone()
@@ -115,8 +122,13 @@ def create_services():
                 elif row_str_ == "service_groups" and s_ not in list_services:
                     logging.info("SERVICE GROUP " + s_)
                     create_service_group(s_, cur)
-        #           if rows is None:
-        #               api_worker.publish_changes()
+                #           if rows is None:
+                #               api_worker.publish_changes()
+                n = n + 1
+                if n == 100:
+                    api_worker.publish_changes()
+                    api_worker.login()
+                    n = 0
         api_worker.publish_changes()
         logging.info("Total number of analazed service " + str(len(list_services)))
         # logging.info("Those services are " + str(list_services))

@@ -47,6 +47,7 @@ def create_rules():
         cur = conn.cursor()
         cur.execute("SELECT * FROM security_policy")
         rows = cur.fetchall()
+        n = 0
         for row in rows:
             print(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9])
             # row[0] - Rule_Number
@@ -84,6 +85,11 @@ def create_rules():
                 print(rule.number, rule.name, rule.src, rule.src_neg, rule.dst, rule.dst_neg, rule.services,
                       rule.action, rule.comments)
                 api_worker.create_new_rule(rule)
+                n = n + 1
+                if n == 100:
+                    api_worker.publish_changes()
+                    api_worker.login()
+                    n = 0
         api_worker.publish_changes()
     else:
         print("Error! cannot create the database connection.")

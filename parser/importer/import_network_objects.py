@@ -1,6 +1,6 @@
 from database import db_worker
 from model import network_objects
-from importer import api_worker,output
+from importer import api_worker, output
 import logging
 import ipaddress
 
@@ -12,16 +12,17 @@ list_network_objects = []
 success_added_obj = []
 error_added_obj = {}
 
-
 obj_should_be_fake = (
     "cluster_member", "connectra", "gateway_ckp", "gateway_plain", "sofaware_gateway", "gateway_cluster",
     "host_ckp", "group_with_exception")
+
 
 def response_analyze(response, obj_name):
     if response is None:
         success_added_obj.append(obj_name)
     else:
         error_added_obj[obj_name] = response
+
 
 def get_modified_members(members, cur):
     result = []
@@ -56,24 +57,24 @@ def create_host_plain(host_plain, cur):
     host_plain_obj = network_objects.host_plain(db_worker.del_g_host(rows[0]), rows[1], rows[2].lower(), rows[3])
     logging.info("Trying to add to SMS host_plain " + host_plain_obj.name)
     response = api_worker.create_object("add-host", {"name": host_plain_obj.name, "comments": host_plain_obj.comments,
-                                          "ip-address": host_plain_obj.ip_address,
-                                          "color": api_worker.choose_color(host_plain_obj),
-                                          "ignore-warnings": "true"})
+                                                     "ip-address": host_plain_obj.ip_address,
+                                                     "color": api_worker.choose_color(host_plain_obj),
+                                                     "ignore-warnings": "true"})
     response_analyze(response, host_plain_obj.name)
 
 
 def create_network(network, cur):
     cur.execute("SELECT * FROM network WHERE name='%s'" % (network,))
     rows = cur.fetchone()
-    network_obj = network_objects.host_plain(db_worker.del_g_net(rows[0]), rows[1], rows[2].lower(), rows[3])
+    network_obj = network_objects.network(db_worker.del_g_net(rows[0]), rows[1], rows[2].lower(), rows[3])
     logging.info("Trying to add to SMS network " + network_obj.name + " " + network_obj.ip_address)
     ip = ipaddress.ip_network(network_obj.ip_address)
     response = api_worker.create_object("add-network", {"name": network_obj.name, "comments": network_obj.comments,
-                                             "subnet": str(ip.network_address),
-                                             "mask-length": str(ip.prefixlen),
-                                             "color": api_worker.choose_color(network_obj),
-                                             "ignore-warnings": "true"})
-    response_analyze(response,  network_obj.name)
+                                                        "subnet": str(ip.network_address),
+                                                        "mask-length": str(ip.prefixlen),
+                                                        "color": api_worker.choose_color(network_obj),
+                                                        "ignore-warnings": "true"})
+    response_analyze(response, network_obj.name)
 
 
 def create_address_range(address_range, cur):
@@ -82,21 +83,24 @@ def create_address_range(address_range, cur):
     address_range_obj = network_objects.address_range(rows[0], rows[1], rows[2].lower(), rows[3], rows[4])
     logging.info("Trying to add to SMS address_range " + address_range_obj.name)
     response = api_worker.create_object("add-address-range",
-                             {"name": address_range_obj.name, "comments": address_range_obj.comments,
-                              "ip-address-first": address_range_obj.ipaddr_first,
-                              "ip-address-last": address_range_obj.ipaddr_last,
-                              "color": api_worker.choose_color(address_range_obj),
-                              "ignore-warnings": "true"})
-    response_analyze(response,  address_range_obj.name)
+                                        {"name": address_range_obj.name, "comments": address_range_obj.comments,
+                                         "ip-address-first": address_range_obj.ipaddr_first,
+                                         "ip-address-last": address_range_obj.ipaddr_last,
+                                         "color": api_worker.choose_color(address_range_obj),
+                                         "ignore-warnings": "true"})
+    response_analyze(response, address_range_obj.name)
+
 
 def create_fake_object(host_plain):
     logging.info("Trying to add to SMS fake object " + host_plain)
     response = api_worker.create_object("add-host",
-                             {"name": host_plain, "ip-address": "1.1.1.1", "color": "green", "ignore-warnings": "true"})
+                                        {"name": host_plain, "ip-address": "1.1.1.1", "color": "green",
+                                         "ignore-warnings": "true"})
     response_analyze(response, host_plain)
 
 
 def create_network_object_group(network_object_group, cur):
+    n = 0
     for s_ in get_members(network_object_group, cur):
         logging.info(s_)
         cur.execute("SELECT type FROM network_object_index WHERE name =(?)", (s_,))
@@ -128,6 +132,11 @@ def create_network_object_group(network_object_group, cur):
             list_network_objects.append(s2_)
             logging.info("Creating network_object_group " + s2_)
             create_network_object_group(s_, cur)
+        n = n + 1
+        if n == 100:
+            api_worker.publish_changes()
+            api_worker.login()
+            n = 0
     cur.execute("SELECT * FROM network_object_group WHERE name='%s'" % (network_object_group,))
     rows = cur.fetchone()
     print(rows)
@@ -136,10 +145,12 @@ def create_network_object_group(network_object_group, cur):
     logging.info("Trying to add to SMS network_object_group " + network_object_group_obj.name)
     print("Trying to add to SMS network_object_group " + network_object_group_obj.name)
     response = api_worker.create_object("add-group",
-                             {"name": network_object_group_obj.name, "comments": network_object_group_obj.comments,
-                              "color": api_worker.choose_color(network_object_group_obj),
-                              "members": get_modified_members(network_object_group_obj.members.split(","), cur),
-                              "ignore-warnings": "true"})
+                                        {"name": network_object_group_obj.name,
+                                         "comments": network_object_group_obj.comments,
+                                         "color": api_worker.choose_color(network_object_group_obj),
+                                         "members": get_modified_members(network_object_group_obj.members.split(","),
+                                                                         cur),
+                                         "ignore-warnings": "true"})
     response_analyze(response, network_object_group_obj.name)
 
 
@@ -162,6 +173,7 @@ def create_network_objects():
         s.update(list)
         logging.info("Total number of unique network objects  in rules " + str(len(s)))
         logging.info("Those network objects  are " + str(s))
+        n = 0
         for s_ in s:
             cur.execute("SELECT type FROM network_object_index WHERE name =(?)", (s_,))
             rows = cur.fetchone()
@@ -191,6 +203,11 @@ def create_network_objects():
                     list_network_objects.append(s2_)
                     logging.info("Creating network_object_group " + s2_)
                     create_network_object_group(s_, cur)
+                n = n + 1
+                if n == 100:
+                    api_worker.publish_changes()
+                    api_worker.login()
+                    n = 0
         api_worker.publish_changes()
         logging.info("Total number of analazed network_object " + str(len(list_network_objects)))
         # logging.info("Those network_object are " + str(list_network_objects))

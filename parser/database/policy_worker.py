@@ -12,7 +12,7 @@ def parse_list_security_policy(filename, conn):
     f = open(filename, 'rU')
     sql_security_policy = ''' (Rule_Number,section,name,comments,src,src_neg,dst,dst_neg,services,action)
               VALUES(?,?,?,?,?,?,?,?,?,?) '''
-    tree = ET.parse(filename, ET.XMLParser(encoding="cp1252"))
+    tree = ET.parse(filename)
     root = tree.getroot()
     print(root)
     count_enabled_rules = 1

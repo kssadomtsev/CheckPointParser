@@ -9,6 +9,7 @@ logging.getLogger('').handlers = []
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
                     filename="..\\logs\\parser_log.log",
                     level=logging.DEBUG, filemode='w')
+logging._defaultFormatter = logging.Formatter(r"%(message)s")
 
 
 # Checking than string contains
@@ -128,7 +129,7 @@ def parser_type7(net_obj_):
 def parse_list_network_object(filename, conn):
     f = open(filename, 'rU')
     type_net_obj = []
-    tree = ET.parse(filename, ET.XMLParser(encoding="cp1251"))
+    tree = ET.parse(filename)
     root = tree.getroot()
     print(root)
     net_obj_type_dict = {
