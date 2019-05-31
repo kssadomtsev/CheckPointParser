@@ -40,8 +40,8 @@ def get_address_range(address_range, cur):
 
 
 def get_filter_nets(nets_list):
-    for str in nets_list.split(","):
-        nets.append(ipaddress.IPv4Network(str))
+    for str in nets_list.splitlines():
+        nets.append(ipaddress.IPv4Network(str.strip()))
     print(nets)
 
 

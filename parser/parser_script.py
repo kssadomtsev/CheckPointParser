@@ -14,16 +14,16 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S
 
 def run_parser():
     logging.info("Program was started")
-    print()
-    print("1. Format XML file and create internal database for store objects ")
-    print("2. Clear database ")
-    print("3. Apply subnet filter and create new database for VS migration(custom) ")
-    print("4. Apply subnet filter and create new database for OUT gateway ")
-    print("5. Import related services and service groups, network objects and groups to new SMS ")
-    print("6. Import related rules to new SMS ")
-    print("Exit")
-    print()
     while True:
+        print()
+        print("1. Format XML file and create internal database for store objects ")
+        print("2. Clear database ")
+        print("3. Apply subnet filter and create new database for VS migration(custom) ")
+        print("4. Apply subnet filter and create new database for OUT gateway ")
+        print("5. Import related services and service groups, network objects and groups to new SMS ")
+        print("6. Import related rules to new SMS ")
+        print("Exit")
+        print()
         option = input("Please enter needed option as number without dot or exit:").lower()
         if option == "1":
             logging.info("Option 1 was selected")
