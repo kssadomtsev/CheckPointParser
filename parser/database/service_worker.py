@@ -27,7 +27,7 @@ def parse_list_service(filename, conn):
             port = db_worker.del_nt(service_.find('port').text)
             color = db_worker.del_nt(service_.find('color').text)
             logging.info("Now under analyze... " + name)
-            service = (db_worker.del_g(name), comment, color, type, port)
+            service = (name, comment, color, type, port)
             logging.info(service)
             db_worker.create_net_obj(conn, service, "services", sql_service)
             count_services += 1
@@ -40,7 +40,7 @@ def parse_list_service(filename, conn):
                 color = db_worker.del_nt(service_.find('color').text)
                 logging.info("Now under analyze... " + name)
                 port = None
-                service = (db_worker.del_g(name), comment, color, type, port)
+                service = (name, comment, color, type, port)
                 logging.info(service)
                 db_worker.create_net_obj(conn, service, "services", sql_service)
 
@@ -57,9 +57,9 @@ def parse_list_service(filename, conn):
             for service_gr_mem in service_.findall('members'):
                 elements = service_gr_mem.findall('reference')
                 for element in elements:
-                    members.append(db_worker.del_g(db_worker.del_nt(element.find('Name').text)))
+                    members.append(db_worker.del_nt(element.find('Name').text))
             members_str = ",".join(members)
-            service_group = (db_worker.del_g(name), comment, color, members_str)
+            service_group = (name, comment, color, members_str)
             logging.info(service_group)
             db_worker.create_net_obj(conn, service_group, "service_groups", sql_service_group)
             count_services += 1

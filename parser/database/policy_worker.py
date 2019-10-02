@@ -37,7 +37,7 @@ def parse_list_security_policy(filename, conn, table):
             for dst in rule.findall('dst/members/reference'):
                 destinations.append(db_worker.del_nt(dst.find('Name').text))
             for service_ in rule.findall('services/members/reference'):
-                services.append(db_worker.del_g(db_worker.del_nt(service_.find('Name').text)))
+                services.append(service_.find('Name').text)
             if db_worker.del_nt(rule.find('src/op').text) == "not in":
                 sources_neg = "True"
             else:

@@ -12,17 +12,6 @@ list_services = []
 success_added_services = []
 error_added_services = {}
 
-def get_modified_members(members, cur):
-    result = []
-    for member in members:
-        cur.execute("SELECT type FROM service_index WHERE name =(?)", (member,))
-        rows = cur.fetchone()
-        row_str_ = str(rows).strip("()',")
-        logging.info(row_str_)
-        result.append(db_worker.del_g(member))
-    return result
-
-
 def get_members(group, cur):
     cur.execute("SELECT members FROM service_groups WHERE name='%s'" % (group,))
     rows = cur.fetchone()
@@ -39,32 +28,30 @@ def create_service_group(group, cur):
         #       logging.info(rows_)
         row_str = str(rows_).strip("()',")
         logging.info(row_str)
-        if row_str == "services" and db_worker.del_g(row) not in list_services:
-            s2_ = db_worker.del_g(row)
-            list_services.append(s2_)
-            logging.info("Creating service " + s2_)
+        if row_str == "services" and row not in list_services:
+            list_services.append(row)
+            logging.info("Creating service " + row)
             create_service(row, cur)
-        elif row_str == "service_groups" and db_worker.del_g(row) not in list_services:
-            s2_ = db_worker.del_g(row)
-            list_services.append(s2_)
+        elif row_str == "service_groups" and row not in list_services:
+            list_services.append(row)
             create_service_group(row, cur)
         n = n + 1
         if n == 100:
             api_worker.publish_changes()
             api_worker.login()
             n = 0
-    list_services.append(db_worker.del_g(group))
-    logging.info("Creating service group " + db_worker.del_g(group))
+    list_services.append(group)
+    logging.info("Creating service group " + group)
     cur.execute("SELECT * FROM service_groups WHERE name='%s'" % (group,))
     rows = cur.fetchone()
     print(rows)
-    service_group_obj = network_objects.service_group(db_worker.del_g(rows[0]), rows[1], rows[2].lower(), rows[3])
+    service_group_obj = network_objects.service_group(rows[0], rows[1], rows[2].lower(), rows[3])
     logging.info("Trying to add to SMS service group " + service_group_obj.name)
     print("Trying to add to SMS service group " + service_group_obj.name)
     response = api_worker.create_object("add-service-group",
                                         {"name": service_group_obj.name, "comments": service_group_obj.comments,
                                          "color": api_worker.choose_color(service_group_obj),
-                                         "members": get_modified_members(service_group_obj.members.split(","), cur),
+                                         "members": service_group_obj.members.split(","),
                                          "ignore-warnings": "true"})
     if response is None:
         success_added_services.append(service_group_obj.name)
@@ -75,7 +62,7 @@ def create_service_group(group, cur):
 def create_service(service, cur):
     cur.execute("SELECT * FROM services WHERE name='%s'" % (service,))
     rows = cur.fetchone()
-    service_obj = network_objects.service(db_worker.del_g(rows[0]), rows[1], rows[2], rows[3].lower(), rows[4])
+    service_obj = network_objects.service(rows[0], rows[1], rows[2], rows[3].lower(), rows[4])
     if service_obj.type == "tcp":
         #        print("TCP servcie!!")
         service_obj.print_service()
@@ -111,7 +98,7 @@ def create_services():
     api_worker.login()
     if conn is not None:
         cur = conn.cursor()
-        cur.execute("SELECT DISTINCT services FROM security_policy")
+        cur.execute("SELECT DISTINCT services FROM global_policy")
         rows = cur.fetchall()
         s = set()
         list = []
@@ -128,14 +115,12 @@ def create_services():
             rows = cur.fetchone()
             if rows is not None:
                 row_str_ = str(rows).strip("()',")
-                if row_str_ == "services" and db_worker.del_g(s_) not in list_services:
-                    s2_ = db_worker.del_g(s_)
-                    list_services.append(s2_)
-                    logging.info("Creating service " + s2_)
+                if row_str_ == "services" and s_ not in list_services:
+                    list_services.append(s_)
+                    logging.info("Creating service " + s_)
                     create_service(s_, cur)
-                elif row_str_ == "service_groups" and db_worker.del_g(s_) not in list_services:
-                    s2_ = db_worker.del_g(s_)
-                    logging.info("SERVICE GROUP " + s2_)
+                elif row_str_ == "service_groups" and s_ not in list_services:
+                    logging.info("SERVICE GROUP " + s_)
                     create_service_group(s_, cur)
                 #           if rows is None:
                 #               api_worker.publish_changes()
