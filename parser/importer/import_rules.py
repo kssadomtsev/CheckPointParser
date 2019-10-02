@@ -42,7 +42,7 @@ def get_modified_service_members(members):
 
 def create_rules():
     conn = db_worker.create_connection()
-    api_worker.login()
+    api_worker.login(False)
     if conn is not None:
         cur = conn.cursor()
         cur.execute("SELECT * FROM security_policy")
@@ -87,10 +87,10 @@ def create_rules():
                 api_worker.create_new_rule(rule)
                 n = n + 1
                 if n == 100:
-                    api_worker.publish_changes()
-                    api_worker.login()
+                    api_worker.publish_changes(False)
+                    api_worker.login(False)
                     n = 0
-        api_worker.publish_changes()
+        api_worker.publish_changes(False)
     else:
         print("Error! cannot create the database connection.")
         logging.warning("Error! cannot create the database connection.")

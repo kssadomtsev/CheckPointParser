@@ -43,7 +43,7 @@ def get_tcp_services(client):
     return tcp_services_ports
 
 
-def login():
+def login(isglobal):
     client_args = APIClientArgs(server=config.api_server)
     client = APIClient(client_args)
     client.debug_file = "api_calls.json"
@@ -51,7 +51,11 @@ def login():
         print("Could not get the server's fingerprint - Check connectivity with the server.")
         logging.warning("Could not get the server's fingerprint - Check connectivity with the server.")
         sys.exit(1)
-    login_res = client.login(config.username, config.password, "True", config.domain)
+    if isglobal is False:
+        login_res = client.login(config.username, config.password, "True", config.domain)
+    else:
+        print("GLOBAL POLICY")
+        login_res = client.login(config.username, config.password, "True", "Global")
     if login_res.success is False:
         print("Login failed: {}".format(login_res.error_message))
         logging.warning("Login failed: {}".format(login_res.error_message))
@@ -96,7 +100,7 @@ def create_new_rule(rule):
         return "Failed to add the access-rule: '{}', Error: {}".format(rule.name, add_rule_response.error_message)
 
 
-def publish_changes():
+def publish_changes(isglobal):
     client_args = APIClientArgs(server=config.api_server)
     with APIClient(client_args) as client:
         client.debug_file = "api_calls.json"
@@ -104,12 +108,18 @@ def publish_changes():
             print("Could not get the server's fingerprint - Check connectivity with the server.")
             logging.warning("Could not get the server's fingerprint - Check connectivity with the server.")
             sys.exit(1)
-        login_res = client.login(config.username, config.password, "True", config.domain)
+        if isglobal is False:
+            login_res = client.login(config.username, config.password, "True", config.domain)
+        else:
+            login_res = client.login(config.username, config.password, "True", "Global")
         if login_res.success is False:
             print("Login failed: {}".format(login_res.error_message))
             logging.warning("Login failed: {}".format(login_res.error_message))
             sys.exit(1)
-        set_package = client.api_call("set-package", {"name": config.package})
+        if isglobal is False:
+            set_package = client.api_call("set-package", {"name": config.package})
+        else:
+            set_package = client.api_call("set-package", {"name": config.global_package})
         publish_res = client.api_call("publish", {})
         if publish_res.success:
             print("The changes were published successfully.")

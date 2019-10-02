@@ -134,8 +134,8 @@ def create_network_object_group(network_object_group, cur):
             create_network_object_group(s_, cur)
         n = n + 1
         if n == 100:
-            api_worker.publish_changes()
-            api_worker.login()
+            api_worker.publish_changes(False)
+            api_worker.login(False)
             n = 0
     cur.execute("SELECT * FROM network_object_group WHERE name='%s'" % (network_object_group,))
     rows = cur.fetchone()
@@ -156,7 +156,7 @@ def create_network_object_group(network_object_group, cur):
 
 def create_network_objects():
     conn = db_worker.create_connection()
-    api_worker.login()
+    api_worker.login(False)
     if conn is not None:
         cur = conn.cursor()
         cur.execute("SELECT DISTINCT src FROM security_policy")
@@ -205,10 +205,10 @@ def create_network_objects():
                     create_network_object_group(s_, cur)
                 n = n + 1
                 if n == 100:
-                    api_worker.publish_changes()
-                    api_worker.login()
+                    api_worker.publish_changes(False)
+                    api_worker.login(False)
                     n = 0
-        api_worker.publish_changes()
+        api_worker.publish_changes(False)
         logging.info("Total number of analazed network_object " + str(len(list_network_objects)))
         # logging.info("Those network_object are " + str(list_network_objects))
         logging.info("Result of adding new network objects to new SMS:")

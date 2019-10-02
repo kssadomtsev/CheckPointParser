@@ -50,8 +50,8 @@ def create_service_group(group, cur):
             create_service_group(row, cur)
         n = n + 1
         if n == 100:
-            api_worker.publish_changes()
-            api_worker.login()
+            api_worker.publish_changes(False)
+            api_worker.login(False)
             n = 0
     list_services.append(db_worker.del_g(group))
     logging.info("Creating service group " + db_worker.del_g(group))
@@ -108,7 +108,7 @@ def create_service(service, cur):
 
 def create_services():
     conn = db_worker.create_connection()
-    api_worker.login()
+    api_worker.login(False)
     if conn is not None:
         cur = conn.cursor()
         cur.execute("SELECT DISTINCT services FROM security_policy")
@@ -141,10 +141,10 @@ def create_services():
                 #               api_worker.publish_changes()
                 n = n + 1
                 if n == 100:
-                    api_worker.publish_changes()
-                    api_worker.login()
+                    api_worker.publish_changes(False)
+                    api_worker.login(False)
                     n = 0
-        api_worker.publish_changes()
+        api_worker.publish_changes(False)
         logging.info("Total number of analazed service " + str(len(list_services)))
         # logging.info("Those services are " + str(list_services))
         logging.info("Result of adding new services to new SMS:")
