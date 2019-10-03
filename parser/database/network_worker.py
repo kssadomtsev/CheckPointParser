@@ -2,6 +2,7 @@ from database import db_worker
 import xml.etree.ElementTree as ET
 import re
 from sqlite3 import Error
+from importer import output
 
 import logging
 
@@ -10,6 +11,7 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S
                     filename="..\\logs\\parser_log.log",
                     level=logging.DEBUG, filemode='w')
 logging._defaultFormatter = logging.Formatter(r"%(message)s")
+groups_list = {}
 
 
 # Checking than string contains
@@ -229,8 +231,10 @@ def parse_list_network_object(filename, conn):
             count_gateway_cluster += 1
             j = 1
         elif class_name == 'network_object_group':
-            net_obj = (name, comment, color) + parser_type6(net_obj_)
+            members = parser_type6(net_obj_)
+            net_obj = (name, comment, color) + members
             count_network_group += 1
+            groups_list[name] = len(members[0].split(","))
             j = 1
         elif class_name == 'group_with_exception':
             net_obj = (name, comment, color) + parser_type7(net_obj_)
@@ -240,7 +244,7 @@ def parse_list_network_object(filename, conn):
             db_worker.create_net_obj(conn, net_obj, class_name, net_obj_type_dict[class_name])
             logging.info(net_obj)
     conn.commit()
-
+    output.print_to_xlsx(groups_list, "groups_r77.30.xlsx")
     print('**********************************************************************')
     print('Numbers of cluster_member = ' + str(count_cluster_member))
     print('Numbers of gateway_ckp = ' + str(count_gateway_ckp))

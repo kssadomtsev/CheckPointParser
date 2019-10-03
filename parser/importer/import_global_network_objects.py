@@ -12,6 +12,7 @@ list_network_objects = []
 success_added_obj = []
 error_added_obj = {}
 n = 0
+groups_list = {}
 
 obj_should_be_fake = (
     "cluster_member", "connectra", "gateway_ckp", "gateway_plain", "sofaware_gateway", "gateway_cluster",
@@ -144,6 +145,7 @@ def create_network_object_group(network_object_group, cur):
                                                                          cur),
                                          "ignore-warnings": "true"})
     response_analyze(response, network_object_group_obj.name)
+    groups_list[network_object_group_obj.name] = len(network_object_group_obj.members.split(","))
 
 
 def create_network_objects():
@@ -204,6 +206,7 @@ def create_network_objects():
         logging.info("Without errors was added following count of network objects: " + str(len(success_added_obj)))
         logging.info("With errors wasn't added following count of network objects: " + str(len(error_added_obj)))
         output.print_to_xlsx(error_added_obj, "network_objects_error.xlsx")
+        output.print_to_xlsx(groups_list, "groups_r80_global.xlsx")
 
     else:
         print("Error! cannot create the database connection.")
