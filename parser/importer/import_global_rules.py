@@ -21,33 +21,32 @@ def get_modified_members(members, cur):
         rows = cur.fetchone()
         row_str_ = str(rows).strip("()',")
         logging.info(row_str_)
-        if row_str_ == "host_plain":
-            result.append(db_worker.del_g_host(member))
-        elif row_str_ == "network":
-            result.append(db_worker.del_g_net(member))
-        elif row_str_ == "address_range":
+        if row_str_ == "host_plain" or row_str_ == "network" or row_str_ == "address_range" or row_str_ == "network_object_group":
             result.append(member)
         elif row_str_ in obj_should_be_fake:
             result.append("F_" + member)
-        elif row_str_ == "network_object_group":
-            result.append(db_worker.del_g_group(member))
     return result
 
-
-def get_modified_service_members(members):
+def get_modified_service_members(members, cur):
     result = []
     for member in members:
-        result.append(db_worker.del_g(member))
+        cur.execute("SELECT type FROM services WHERE name =(?)", (member,))
+        rows = cur.fetchone()
+        row_str_ = str(rows).strip("()',")
+        logging.info(row_str_)
+        if row_str_ == "other_service":
+            result.append(db_worker.del_g(member))
+        else:
+            result.append(member)
     return result
-
 
 def create_rules():
     global n
     conn = db_worker.create_connection()
-    api_worker.login(False)
+    api_worker.login(True)
     if conn is not None:
         cur = conn.cursor()
-        cur.execute("SELECT * FROM security_policy")
+        cur.execute("SELECT * FROM global_policy")
         rows = cur.fetchall()
         for row in rows:
             print(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9])
@@ -66,7 +65,7 @@ def create_rules():
             else:
                 rule_name = ""
             if row[1] == "True":
-                api_worker.create_object("add-access-section", {"name": rule_name, "layer": config.layer,
+                api_worker.create_object("add-access-section", {"name": rule_name, "layer": config.global_layer,
                                                                 "position": "bottom"})
             else:
                 if row[4] == "Any":
@@ -80,18 +79,18 @@ def create_rules():
                 if row[8] == "Any":
                     srv = "Any"
                 else:
-                    srv = get_modified_service_members(row[8].split(","))
+                    srv = get_modified_service_members(row[8].split(","), cur)
                 rule = network_objects.security_rule(row[0], rule_name, src, row[5], dst, row[7], srv, row[9].lower(),
                                                      row[3])
                 print(rule.number, rule.name, rule.src, rule.src_neg, rule.dst, rule.dst_neg, rule.services,
                       rule.action, rule.comments)
-                api_worker.create_new_rule(rule, False)
+                api_worker.create_new_rule(rule, True)
                 n = n + 1
                 if n == 100:
-                    api_worker.publish_changes(False)
-                    api_worker.login(False)
+                    api_worker.publish_changes(True)
+                    api_worker.login(True)
                     n = 0
-        api_worker.publish_changes(False)
+        api_worker.publish_changes(True)
     else:
         print("Error! cannot create the database connection.")
         logging.warning("Error! cannot create the database connection.")

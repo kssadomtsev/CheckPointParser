@@ -54,7 +54,6 @@ def login(isglobal):
     if isglobal is False:
         login_res = client.login(config.username, config.password, "True", config.domain)
     else:
-        print("GLOBAL POLICY")
         login_res = client.login(config.username, config.password, "True", "Global")
     if login_res.success is False:
         print("Login failed: {}".format(login_res.error_message))
@@ -77,11 +76,16 @@ def create_object(command, parametrs):
         return format(add_serv_response.error_message)
 
 
-def create_new_rule(rule):
+def create_new_rule(rule, isglobal):
     client = config.session
-    set_package = client.api_call("set-package", {"name": config.package})
+    if isglobal is False:
+        set_package = client.api_call("set-package", {"name": config.package})
+        layer = config.layer
+    else:
+        set_package = client.api_call("set-package", {"name": config.global_package})
+        layer = config.global_layer
     add_rule_response = client.api_call("add-access-rule",
-                                        {"name": rule.name, "layer": config.layer,
+                                        {"name": rule.name, "layer": layer,
                                          "position": "bottom",
                                          "action": rule.action, "destination": rule.dst,
                                          "destination-negate": rule.dst_neg, "source": rule.src,

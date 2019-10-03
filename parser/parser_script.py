@@ -2,7 +2,8 @@
 import sys, os
 from xmlformat import formatXML
 from database import service_worker, network_worker, policy_worker
-from importer import import_servces, import_network_objects, import_rules, filter_policy_worker, import_global_servces
+from importer import import_servces, import_network_objects, import_rules, filter_policy_worker, import_global_servces,\
+    import_global_network_objects, import_global_rules
 import logging
 import config
 
@@ -23,6 +24,7 @@ def run_parser():
         print("5. Import related services and service groups, network objects and groups to new SMS ")
         print("6. Import related rules to new SMS ")
         print("7. Import GLOBAL services and service groups, network objects and groups to new SMS ")
+        print("8. Import GLOBAL rules to new SMS ")
         print("Exit")
         print()
         option = input("Please enter needed option as number without dot or exit:").lower()
@@ -57,6 +59,10 @@ def run_parser():
         elif option == "7":
             logging.info("Option 7 was selected")
             import_global_servces.create_services()
+            import_global_network_objects.create_network_objects()
+        elif option == "8":
+            logging.info("Option 8 was selected")
+            import_global_rules.create_rules()
         elif option == "exit":
             logging.info("Exit")
             sys.exit(1)

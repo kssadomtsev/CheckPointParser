@@ -11,6 +11,7 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S
 list_services = []
 success_added_services = []
 error_added_services = {}
+n = 0
 
 def get_members(group, cur):
     cur.execute("SELECT members FROM service_groups WHERE name='%s'" % (group,))
@@ -20,7 +21,7 @@ def get_members(group, cur):
 
 
 def create_service_group(group, cur):
-    n = 0
+    global n
     for row in get_members(group, cur):
         logging.info(row)
         cur.execute("SELECT type FROM service_index WHERE name =(?)", (row,))
@@ -94,6 +95,7 @@ def create_service(service, cur):
 
 
 def create_services():
+    global n
     conn = db_worker.create_connection()
     api_worker.login(True)
     if conn is not None:
@@ -109,7 +111,6 @@ def create_services():
         s.update(list)
         logging.info("Total number of unique services in rules " + str(len(s)))
         logging.info("Those services are " + str(s))
-        n = 0
         for s_ in s:
             cur.execute("SELECT type FROM service_index WHERE name =(?)", (s_,))
             rows = cur.fetchone()
