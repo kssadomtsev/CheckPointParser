@@ -11,8 +11,8 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S
 list_network_objects = []
 success_added_obj = []
 error_added_obj = {}
-groups_list = {}
 n = 0
+groups_list = {}
 
 obj_should_be_fake = (
     "cluster_member", "connectra", "gateway_ckp", "gateway_plain", "sofaware_gateway", "gateway_cluster",
